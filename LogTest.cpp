@@ -12,20 +12,17 @@
 using namespace limlog;
 
 void thr_1() {
-    produceLog("thr_1", 5);
-    produceLog("thread_1", 8);
+    for (int i = 0; i < 10000000; i++)
+        produceLog("11111\n", 6);
 }
 
 void thr_2() {
     for (int i = 0; i < 10000000; i++)
-        produceLog("thr_2", 5);
-    produceLog("thread_2", 8);
+        produceLog("22222\n", 6);
 }
 
 int main() {
-    setLogFile("./testLogFile");
-    produceLog("hello, world", 12);
-    produceLog("zengxianhui is wang ba dang.", 25);
+    setLogFile("./test_log_file.log");
 
     std::thread t1(thr_1);
     std::thread t2(thr_2);

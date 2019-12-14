@@ -129,19 +129,21 @@ void BlockingBuffer::produce(const char *from, uint32_t n) {
 // LimLog Constructor.
 LimLog::LimLog()
     : logSink_(),
+      threadSync_(false),
       threadExit_(false),
       outputFull_(false),
       level_(LogLevel::WARN),
-      sinkCount_(0),
       bufferSize_(1 << 24),
-      consumePos_(0),
+      sinkCount_(0),
+      perConsumeBytes_(0),
+      totalConsumeBytes_(0),
       outputBuffer_(nullptr),
       doubleBuffer_(nullptr),
       threadBuffers_(),
       bufferMutex_(),
       condMutex_(),
-      workCond_(),
-      hintCond_(),
+      proceedCond_(),
+      hitEmptyCond_(),
       sinkThread_() {
 
     outputBuffer_ = static_cast<char *>(malloc(bufferSize_));
@@ -153,16 +155,18 @@ LimLog::LimLog()
 
 LimLog::~LimLog() {
     {
-        std::unique_lock<std::mutex> lock(condMutex_);
-        singletonLog.workCond_.notify_all();
-        singletonLog.hintCond_.wait(lock);
+        // notify background thread befor the object detoryed.
+        std::unique_lock<std::mutex> lock(singletonLog.condMutex_);
+        singletonLog.threadSync_ = true;
+        singletonLog.proceedCond_.notify_all();
+        singletonLog.hitEmptyCond_.wait(lock);
     }
 
-    // stop sink thread.
     {
+        // stop sink thread.
         std::lock_guard<std::mutex> lock(condMutex_);
         singletonLog.threadExit_ = true;
-        singletonLog.workCond_.notify_all();
+        singletonLog.proceedCond_.notify_all();
     }
 
     if (singletonLog.sinkThread_.joinable())
@@ -170,30 +174,36 @@ LimLog::~LimLog() {
 
     free(outputBuffer_);
     free(doubleBuffer_);
+
+    for (auto &buf : threadBuffers_)
+        free(buf);
+
+    singletonLog.listStatistic();
 }
 
 // Sink log info to file with async.
 void LimLog::sinkThreadFunc() {
+    // \fixed me, it will enter infinity if compile with -O3 .
     while (!threadExit_) {
         // move front-end data to internal buffer.
         {
             std::lock_guard<std::mutex> lock(bufferMutex_);
-            int bbufferIdx = 0;
+            uint32_t bbufferIdx = 0;
             // while (!threadExit_ && !outputFull_ && !threadBuffers_.empty()) {
             while (!threadExit_ && !outputFull_ &&
                    (bbufferIdx < threadBuffers_.size())) {
                 BlockingBuffer *bbuffer = threadBuffers_[bbufferIdx];
                 uint32_t usedBytes = bbuffer->used();
 
-                if (bufferSize_ - consumePos_ < usedBytes) {
+                if (bufferSize_ - perConsumeBytes_ < usedBytes) {
                     outputFull_ = true;
                     break;
                 }
 
                 if (usedBytes > 0) {
-                    uint32_t n = bbuffer->consume(outputBuffer_ + consumePos_,
-                                                  usedBytes);
-                    consumePos_ += n;
+                    uint32_t n = bbuffer->consume(
+                        outputBuffer_ + perConsumeBytes_, usedBytes);
+                    perConsumeBytes_ += n;
                 } else {
                     // threadBuffers_.erase(threadBuffers_.begin() +
                     // bbufferIdx);
@@ -203,27 +213,46 @@ void LimLog::sinkThreadFunc() {
         }
 
         // not data to sink, go to sleep, 50us.
-        if (consumePos_ == 0) {
+        if (perConsumeBytes_ == 0) {
             std::unique_lock<std::mutex> lock(condMutex_);
-            hintCond_.notify_one();
-            workCond_.wait_for(lock, std::chrono::microseconds(50));
+
+            // if front-end generated sync operation, consume again.
+            if (threadSync_) {
+                threadSync_ = false;
+                continue;
+            }
+
+            hitEmptyCond_.notify_one();
+            proceedCond_.wait_for(lock, std::chrono::microseconds(50));
         } else {
+            logSink_.sink(outputBuffer_, perConsumeBytes_);
             sinkCount_++;
-            logSink_.sink(outputBuffer_, consumePos_);
-            consumePos_ = 0;
+            totalConsumeBytes_ += perConsumeBytes_;
+            perConsumeBytes_ = 0;
             outputFull_ = false;
         }
     }
 }
 
-void LimLog::append(const char *data, size_t n) {
+void LimLog::produce(const char *data, size_t n) {
     if (!blockingBuffer_) {
+        std::lock_guard<std::mutex> lock(bufferMutex_);
         blockingBuffer_ =
             static_cast<BlockingBuffer *>(malloc(sizeof(BlockingBuffer)));
         threadBuffers_.push_back(blockingBuffer_);
     }
 
     blockingBuffer_->produce(data, n);
+}
+
+// List related data of loggin system.
+// \TODO add average sink time.
+void LimLog::listStatistic() const {
+    printf("=== Logging System Related Data ===\n");
+    printf("  Sink data to file count: [%lu]\n", sinkCount_);
+    printf("  Total sink bytes: [%llu]\n", totalConsumeBytes_);
+    printf("  Average sink bytes: [%lu]\n\n",
+           sinkCount_ == 0 ? 0 : totalConsumeBytes_ / sinkCount_);
 }
 
 // Set related properties of logging.
@@ -253,7 +282,7 @@ std::string stringifyLogLevel() {
 }
 
 void produceLog(const char *data, size_t n) {
-    LimLog::singleton()->append(data, n);
+    LimLog::singleton()->produce(data, n);
 }
 
 } // namespace limlog

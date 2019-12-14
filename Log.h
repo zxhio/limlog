@@ -48,6 +48,7 @@ class LogSink {
 
 /// Circle FIFO blocking produce/consume byte queue. Hold log info to wait for
 /// background thread consume. It exists in each thread.
+//  \TODO, add memory barrier to avoid compiler optimization with -O3.
 class BlockingBuffer {
   public:
     BlockingBuffer() : producePos_(0), consumePos_(0) {}
@@ -81,6 +82,8 @@ class BlockingBuffer {
     char storage_[kBlockingBufferSize]; // buffer size power of 2.
 };
 
+/// Logging system.
+/// Manage the action and attibute of logging.
 class LimLog {
   public:
     /// Log setting.
@@ -89,14 +92,14 @@ class LimLog {
     void setLogFile(const char *file) { logSink_.setLogFile(file); };
     void setRollSize(uint32_t size) { logSink_.setRollSize(size); };
 
-    /// Consume one front-end buffer data. \p idx is \p threadBuffers_ index.
-    // void consume(int idx);
-
     /// Singleton pointer.
     static LimLog *singleton() { return &singletonLog; }
 
-    /// Append data to \p BlockingBuffer in each thread.
-    void append(const char *data, size_t n);
+    /// Produce log data to \p BlockingBuffer in each thread.
+    void produce(const char *data, size_t n);
+
+    /// List log related statistic.
+    void listStatistic() const;
 
   private:
     LimLog();
@@ -109,20 +112,22 @@ class LimLog {
 
   private:
     LogSink logSink_;
+    bool threadSync_; // front-back-end sync.
     bool threadExit_; // background thread exit flag.
-    bool outputFull_;
+    bool outputFull_; // output buffer full flag.
     LogLevel level_;
-    uint32_t sinkCount_;
-    uint32_t bufferSize_; // two buffer size.
-    uint32_t consumePos_;
-    char *outputBuffer_;
-    char *doubleBuffer_;
+    uint32_t bufferSize_;        // two buffer size.
+    uint32_t sinkCount_;         // count of sink to file.
+    uint32_t perConsumeBytes_;   // bytes of consume first-end data per loop.
+    uint64_t totalConsumeBytes_; // total consume bytes.
+    char *outputBuffer_;         // first internal buffer.
+    char *doubleBuffer_;         // second internal buffer.
     std::vector<BlockingBuffer *> threadBuffers_;
     std::thread sinkThread_;
-    std::mutex bufferMutex_;
+    std::mutex bufferMutex_; // internel buffer mutex.
     std::mutex condMutex_;
-    std::condition_variable workCond_;
-    std::condition_variable hintCond_;
+    std::condition_variable proceedCond_;  // for background thread to proceed.
+    std::condition_variable hitEmptyCond_; // for no data to consume.
     static LimLog singletonLog;
     static thread_local BlockingBuffer *blockingBuffer_;
 };
@@ -141,5 +146,8 @@ void setRollSize(uint32_t nMb);
 
 /// Back-end provides produce interface.
 void produceLog(const char *data, size_t n);
+
+/// List logging system related data.
+// void listLogStatistic();
 
 } // namespace limlog
