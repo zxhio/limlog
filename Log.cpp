@@ -89,6 +89,13 @@ ssize_t LogSink::sink(const char *data, size_t len) {
     return len - remain;
 }
 
+// used() may be called by different threads, so add memory barrier to ensure
+// the lasted *Pos_ is read.
+uint32_t BlockingBuffer::used() const {
+    asm volatile("lfence" ::: "memory");
+    return producePos_ - consumePos_;
+}
+
 // Get the log info from buffer.
 uint32_t BlockingBuffer::consume(char *to, uint32_t n) {
     // available bytes to consume.
@@ -102,6 +109,8 @@ uint32_t BlockingBuffer::consume(char *to, uint32_t n) {
 
     // then put the rest at beginning of the buffer.
     memcpy(to + off2End, storage_, avail - off2End);
+
+    asm volatile("sfence" ::: "memory");
 
     consumePos_ += avail;
 
@@ -121,6 +130,8 @@ void BlockingBuffer::produce(const char *from, uint32_t n) {
 
     // then put the rest at beginning of the buffer.
     memcpy(storage_, from + off2End, n - off2End);
+
+    asm volatile("sfence" ::: "memory");
 
     produceCount_++;
     producePos_ += n;

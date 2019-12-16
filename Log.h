@@ -53,11 +53,14 @@ class BlockingBuffer {
   public:
     BlockingBuffer() : producePos_(0), consumePos_(0) {}
 
-    uint32_t size() const { return kBlockingBufferSize; }
-
     /// Get position offset calculated from buffer start.
     uint32_t offsetOfPos(uint32_t pos) const { return pos & (size() - 1); }
-    uint32_t used() const { return producePos_ - consumePos_; }
+
+    /// Buffer size.
+    uint32_t size() const { return kBlockingBufferSize; }
+
+    /// Already used bytes.
+    uint32_t used() const;
     uint32_t unused() const { return kBlockingBufferSize - used(); }
     void reset() { producePos_ = consumePos_ = 0; }
 
