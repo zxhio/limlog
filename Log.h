@@ -15,9 +15,9 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <cstdint> // uint32_t
-#include <cstdio>
-#include <cstring>
+#include <stdint.h> // uint32_t
+#include <stdio.h>
+#include <string.h>
 
 namespace limlog {
 
@@ -25,6 +25,8 @@ namespace limlog {
 enum LogLevel : uint8_t { TRACE, DEBUG, INFO, WARN, ERROR, FATAL };
 
 /// Sink log info on file, and the file automatic roll with a setting size.
+/// If set log file, the log file format is
+/// `dir/filename.date.time.filecount.log `, default is `./run.log`.
 class LogSink {
   public:
     LogSink();
@@ -44,6 +46,7 @@ class LogSink {
     std::string fileName_;
     FILE *fp_;
     static const uint32_t kBytesPerMb = 1 << 20;
+    static constexpr const char *kDefaultLogFile = "./run";
 };
 
 /// Circle FIFO blocking produce/consume byte queue. Hold log info to wait for
@@ -138,10 +141,12 @@ class LimLog {
 /// Set log level, defalt WARN.
 void setLogLevel(LogLevel level);
 
-/// Get log level with string.
-std::string stringifyLogLevel();
+/// Get log level.
+LogLevel getLogLevel();
+std::string stringifyLogLevel(LogLevel level);
 
-/// Set log file (basename and dir), defalut /tmp/date_roll_index.log.
+/// Set log file (basename and dir, no suffix), defalut `./run`.
+/// The Program will automatically add suffix (`.log`).
 void setLogFile(const char *file);
 
 /// Set log file roll size (MB), default 10 MB.

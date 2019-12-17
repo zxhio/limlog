@@ -9,9 +9,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "Log.h"
+#include "Timestamp.h"
 
 #include <chrono>
-#include <cstdlib>
+
+#include <stdlib.h>
 
 namespace limlog {
 
@@ -23,7 +25,7 @@ LogSink::LogSink()
     : fileCount_(0),
       rollSize_(10),
       writtenBytes_(0),
-      fileName_("./limlog"),
+      fileName_(kDefaultLogFile),
       fp_(nullptr) {
     rollFile();
 }
@@ -32,7 +34,7 @@ LogSink::LogSink(uint32_t rollSize)
     : fileCount_(0),
       rollSize_(rollSize),
       writtenBytes_(0),
-      fileName_("./limlog"),
+      fileName_(kDefaultLogFile),
       fp_(nullptr) {
     rollFile();
 }
@@ -48,13 +50,22 @@ void LogSink::setLogFile(const char *file) {
     rollFile();
 }
 
-// \TODO auto roll file with size and time.
-// now only reopen file.
+// \TODO auto roll file with time.
 void LogSink::rollFile() {
     if (fp_)
         fclose(fp_);
 
-    std::string file(fileName_);
+    std::string file;
+    if (fileName_ == kDefaultLogFile) {
+        // default format, `./run.log`
+        file = fileName_ + ".log";
+    } else {
+        std::string time = util::Timestamp::now().time();
+        std::string date = util::Timestamp::now().date();
+        // use setting file format, `dir/file.date.time.filecount.log`
+        file = fileName_ + '.' + date + '.' + time + '.' +
+               std::to_string(fileCount_) + ".log";
+    }
 
     fp_ = fopen(file.c_str(), "a+");
     if (!fp_) {
@@ -151,11 +162,11 @@ LimLog::LimLog()
       outputBuffer_(nullptr),
       doubleBuffer_(nullptr),
       threadBuffers_(),
+      sinkThread_(),
       bufferMutex_(),
       condMutex_(),
       proceedCond_(),
-      hitEmptyCond_(),
-      sinkThread_() {
+      hitEmptyCond_() {
 
     outputBuffer_ = static_cast<char *>(malloc(bufferSize_));
     doubleBuffer_ = static_cast<char *>(malloc(bufferSize_));
@@ -260,9 +271,9 @@ void LimLog::produce(const char *data, size_t n) {
 // \TODO add average sink time.
 void LimLog::listStatistic() const {
     printf("=== Logging System Related Data ===\n");
-    printf("  Sink data to file count: [%lu]\n", sinkCount_);
+    printf("  Sink data to file count: [%u]\n", sinkCount_);
     printf("  Total sink bytes: [%llu]\n", totalConsumeBytes_);
-    printf("  Average sink bytes: [%lu]\n\n",
+    printf("  Average sink bytes: [%llu]\n\n",
            sinkCount_ == 0 ? 0 : totalConsumeBytes_ / sinkCount_);
 }
 
@@ -271,9 +282,10 @@ void setLogLevel(LogLevel level) { LimLog::singleton()->setLogLevel(level); }
 void setLogFile(const char *file) { LimLog::singleton()->setLogFile(file); }
 void setRollSize(uint32_t nMb) { LimLog::singleton()->setRollSize(nMb); }
 
+LogLevel getLogLevel() { return LimLog::singleton()->getLogLevel(); }
+
 // Stringify log level with width of 5.
-std::string stringifyLogLevel() {
-    LogLevel level = LimLog::singleton()->getLogLevel();
+std::string stringifyLogLevel(LogLevel level) {
     switch (level) {
     case LogLevel::FATAL:
         return "FATAL";
