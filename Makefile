@@ -1,5 +1,5 @@
 all:
-	g++ -Og -o LogTest Log.cpp LogTest.cpp -std=c++11 -lpthread
+	g++ -Og -g -Wall -o LogTest Log.cpp LogTest.cpp Timestamp.cpp -std=c++11 -lpthread
 
 clean:
-	rm -rf LogTest ./limlog
+	rm -rf LogTest *.log
