@@ -138,6 +138,37 @@ class LimLog {
     static thread_local BlockingBuffer *blockingBuffer_;
 };
 
+/// A line log info, usage is same as 'std::cout'.
+// Log format in memory.
+//  +------+-----------+-------+------+------+----------+------+
+//  | time | thread id | level | logs | file | function | line |
+//  +------+-----------+-------+------+------+----------+------+
+class LogLine {
+  public:
+    LogLine(LogLevel level, const char *file, const char *function,
+            uint32_t line);
+    ~LogLine();
+
+    /// Overloaded functions with various types of argument.
+    LogLine &operator<<(bool arg);
+    LogLine &operator<<(char arg);
+    LogLine &operator<<(int32_t arg);
+    LogLine &operator<<(uint32_t arg);
+    LogLine &operator<<(int64_t arg);
+    LogLine &operator<<(uint64_t arg);
+    LogLine &operator<<(double arg);
+    LogLine &operator<<(const char *arg);
+    LogLine &operator<<(const std::string &arg);
+
+  private:
+    void append(const char *data, size_t len);
+    void append(const char *data);
+
+    const char *file_;
+    const char *function_;
+    uint32_t line_;
+};
+
 /// Set log level, defalt WARN.
 void setLogLevel(LogLevel level);
 
@@ -159,3 +190,14 @@ void produceLog(const char *data, size_t n);
 // void listLogStatistic();
 
 } // namespace limlog
+
+#define LOG(level)                                                             \
+    if (limlog::getLogLevel() <= level)                                        \
+    LogLine(level, __FILE__, __FUNCTION__, __LINE__)
+
+#define LOG_TRACE LOG(limlog::LogLevel::TRACE)
+#define LOG_DEBUG LOG(limlog::LogLevel::DEBUG)
+#define LOG_INFO LOG(limlog::LogLevel::INFO)
+#define LOG_WARN LOG(limlog::LogLevel::WARN)
+#define LOG_ERROR LOG(limlog::LogLevel::ERROR)
+#define LOG_FATAL LOG(limlog::LogLevel::FATAL)

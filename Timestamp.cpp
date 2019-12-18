@@ -61,7 +61,7 @@ std::string Timestamp::date() const { return std::string(datetime(), 0, 8); }
 
 std::string Timestamp::formatTimestamp() const {
     char format[28];
-    snprintf(format, sizeof(format), "%s.%06llu", datetime().c_str(),
+    snprintf(format, sizeof(format), "%s.%06lu", datetime().c_str(),
              timestamp_ % kMicrosecondOneSecond);
     return format;
 }

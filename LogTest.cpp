@@ -12,14 +12,26 @@
 
 using namespace limlog;
 
+const uint32_t kTestCount = 10000;
+
 void thr_1() {
-    for (int i = 0; i < 10000000; i++)
-        produceLog("11111\n", 6);
+    uint64_t start = util::Timestamp::now().timestamp();
+    for (uint32_t i = 0; i < kTestCount; i++)
+        LOG_ERROR << i << 'c' << "hello, world";
+    uint64_t end = util::Timestamp::now().timestamp();
+
+    printf("Thread 1 total times: %lu ms, avg time: %lu ns\n", end - start,
+           (end - start) / (kTestCount / 1000));
 }
 
 void thr_2() {
-    for (int i = 0; i < 10000000; i++)
-        produceLog("22222\n", 6);
+    uint64_t start = util::Timestamp::now().timestamp();
+    for (uint32_t i = 0; i < kTestCount; i++)
+        LOG_ERROR << i << 'c' << "hello, world";
+    uint64_t end = util::Timestamp::now().timestamp();
+
+    printf("Thread 2 total times: %lu ms, avg time: %lu ns\n", end - start,
+           (end - start) / (kTestCount / 1000));
 }
 
 void test_timestamp() {
@@ -28,12 +40,16 @@ void test_timestamp() {
     printf("time: %s\n", util::Timestamp::now().time().c_str());
     printf("format time: %s\n",
            util::Timestamp::now().formatTimestamp().c_str());
-    printf("timestamp: %llu\n", util::Timestamp::now().timestamp());
+    printf("timestamp: %lu\n", util::Timestamp::now().timestamp());
 }
 int main() {
-    test_timestamp();
+    // test_timestamp();
 
     setLogFile("./test_log_file");
+    setLogLevel(limlog::LogLevel::DEBUG);
+    setRollSize(64); // 64MB
+
+    LOG_DEBUG << "我擦";
 
     std::thread t1(thr_1);
     std::thread t2(thr_2);

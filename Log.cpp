@@ -13,12 +13,24 @@
 
 #include <chrono>
 
+#include <unistd.h>
+#include <sys/syscall.h>
+
 #include <stdlib.h>
 
 namespace limlog {
 
 thread_local BlockingBuffer *LimLog::blockingBuffer_ = nullptr;
 LimLog LimLog::singletonLog;
+
+thread_local pid_t tid = 0;
+
+// \TODO get thread id in windows.
+pid_t gettid() {
+    if (tid == 0)
+        tid = syscall(__NR_gettid);
+    return tid;
+}
 
 // LogSink constructor
 LogSink::LogSink()
@@ -272,9 +284,72 @@ void LimLog::produce(const char *data, size_t n) {
 void LimLog::listStatistic() const {
     printf("=== Logging System Related Data ===\n");
     printf("  Sink data to file count: [%u]\n", sinkCount_);
-    printf("  Total sink bytes: [%llu]\n", totalConsumeBytes_);
-    printf("  Average sink bytes: [%llu]\n\n",
+    printf("  Total sink bytes: [%lu]\n", totalConsumeBytes_);
+    printf("  Average sink bytes: [%lu]\n\n",
            sinkCount_ == 0 ? 0 : totalConsumeBytes_ / sinkCount_);
+}
+
+LogLine::LogLine(LogLevel level, const char *file, const char *function,
+                 uint32_t line)
+    : file_((file)), function_(function), line_(line) {
+    *this << util::Timestamp::now().formatTimestamp() << ' ' << gettid() << ' '
+          << stringifyLogLevel(level) << "  ";
+}
+
+LogLine::~LogLine() {
+    *this << " - " << file_ << ':' << function_
+          << "():" << std::to_string(line_) << '\n';
+}
+
+void LogLine::append(const char *data, size_t n) { produceLog(data, n); }
+void LogLine::append(const char *data) { append(data, strlen(data)); }
+
+LogLine &LogLine::operator<<(bool arg) {
+    if (arg)
+        append("true", 4);
+    else
+        append("false", 5);
+    return *this;
+}
+
+LogLine &LogLine::operator<<(char arg) {
+    append(&arg, 1);
+    return *this;
+}
+
+LogLine &LogLine::operator<<(int32_t arg) {
+    append(std::to_string(arg).c_str());
+    return *this;
+}
+
+LogLine &LogLine::operator<<(uint32_t arg) {
+    append(std::to_string(arg).c_str());
+    return *this;
+}
+
+LogLine &LogLine::operator<<(int64_t arg) {
+    append(std::to_string(arg).c_str());
+    return *this;
+}
+
+LogLine &LogLine::operator<<(uint64_t arg) {
+    append(std::to_string(arg).c_str());
+    return *this;
+}
+
+LogLine &LogLine::operator<<(double arg) {
+    append(std::to_string(arg).c_str());
+    return *this;
+}
+
+LogLine &LogLine::operator<<(const char *arg) {
+    append(arg);
+    return *this;
+}
+
+LogLine &LogLine::operator<<(const std::string &arg) {
+    append(arg.c_str(), arg.length());
+    return *this;
 }
 
 // Set related properties of logging.
