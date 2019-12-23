@@ -119,10 +119,20 @@ uint32_t BlockingBuffer::used() const {
     return producePos_ - consumePos_;
 }
 
+void BlockingBuffer::incConsumablePos(uint32_t n) {
+    asm volatile("sfence" ::: "memory");
+    consumablePos_ += n;
+};
+
+uint32_t BlockingBuffer::consumable() const {
+    asm volatile("lfence" ::: "memory");
+    return consumablePos_ - consumePos_;
+}
+
 // Get the log info from buffer.
 uint32_t BlockingBuffer::consume(char *to, uint32_t n) {
     // available bytes to consume.
-    uint32_t avail = std::min(used(), n);
+    uint32_t avail = std::min(consumable(), n);
 
     // offset of consumePos to buffer end.
     uint32_t off2End = std::min(avail, size() - offsetOfPos(consumePos_));
@@ -227,16 +237,16 @@ void LimLog::sinkThreadFunc() {
             while (!threadExit_ && !outputFull_ &&
                    (bbufferIdx < threadBuffers_.size())) {
                 BlockingBuffer *bbuffer = threadBuffers_[bbufferIdx];
-                uint32_t usedBytes = bbuffer->used();
+                uint32_t consumableBytes = bbuffer->consumable();
 
-                if (bufferSize_ - perConsumeBytes_ < usedBytes) {
+                if (bufferSize_ - perConsumeBytes_ < consumableBytes) {
                     outputFull_ = true;
                     break;
                 }
 
-                if (usedBytes > 0) {
+                if (consumableBytes > 0) {
                     uint32_t n = bbuffer->consume(
-                        outputBuffer_ + perConsumeBytes_, usedBytes);
+                        outputBuffer_ + perConsumeBytes_, consumableBytes);
                     perConsumeBytes_ += n;
                 } else {
                     // threadBuffers_.erase(threadBuffers_.begin() +
@@ -279,6 +289,8 @@ void LimLog::produce(const char *data, size_t n) {
     blockingBuffer_->produce(data, n);
 }
 
+void LimLog::incConsumable(uint32_t n) { blockingBuffer_->incConsumablePos(n); }
+
 // List related data of loggin system.
 // \TODO add average sink time.
 void LimLog::listStatistic() const {
@@ -291,7 +303,7 @@ void LimLog::listStatistic() const {
 
 LogLine::LogLine(LogLevel level, const char *file, const char *function,
                  uint32_t line)
-    : file_((file)), function_(function), line_(line) {
+    : file_((file)), function_(function), line_(line), count_(0) {
     *this << util::Timestamp::now().formatTimestamp() << ' ' << gettid() << ' '
           << stringifyLogLevel(level) << "  ";
 }
@@ -299,9 +311,13 @@ LogLine::LogLine(LogLevel level, const char *file, const char *function,
 LogLine::~LogLine() {
     *this << " - " << file_ << ':' << function_
           << "():" << std::to_string(line_) << '\n';
+    incConsumablePos(count_); // already produce a complete log.
 }
 
-void LogLine::append(const char *data, size_t n) { produceLog(data, n); }
+void LogLine::append(const char *data, size_t n) {
+    produceLog(data, n);
+    count_ += static_cast<uint32_t>(n);
+}
 void LogLine::append(const char *data) { append(data, strlen(data)); }
 
 LogLine &LogLine::operator<<(bool arg) {
@@ -382,5 +398,7 @@ std::string stringifyLogLevel(LogLevel level) {
 void produceLog(const char *data, size_t n) {
     LimLog::singleton()->produce(data, n);
 }
+
+void incConsumablePos(uint32_t n) { LimLog::singleton()->incConsumable(n); }
 
 } // namespace limlog

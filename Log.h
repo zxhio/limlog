@@ -51,10 +51,10 @@ class LogSink {
 
 /// Circle FIFO blocking produce/consume byte queue. Hold log info to wait for
 /// background thread consume. It exists in each thread.
-//  \TODO, add memory barrier to avoid compiler optimization with -O3.
 class BlockingBuffer {
   public:
-    BlockingBuffer() : producePos_(0), consumePos_(0) {}
+    BlockingBuffer()
+        : producePos_(0), consumePos_(0), consumablePos_(0), produceCount_(0) {}
 
     /// Get position offset calculated from buffer start.
     uint32_t offsetOfPos(uint32_t pos) const { return pos & (size() - 1); }
@@ -66,6 +66,12 @@ class BlockingBuffer {
     uint32_t used() const;
     uint32_t unused() const { return kBlockingBufferSize - used(); }
     void reset() { producePos_ = consumePos_ = 0; }
+
+    /// The position at the end of the last complete log.
+    uint32_t consumable() const;
+
+    /// Increase consumable position with a complete log length \p n .
+    void incConsumablePos(uint32_t n);
 
     /// Peek the produce position in buffer.
     char *peek() { return &storage_[producePos_]; }
@@ -84,6 +90,7 @@ class BlockingBuffer {
     static const uint32_t kBlockingBufferSize = 1 << 20; // 1 MB
     uint32_t producePos_;
     uint32_t consumePos_;
+    uint32_t consumablePos_; // increase every time with a complete log length.
     uint32_t produceCount_;
     char storage_[kBlockingBufferSize]; // buffer size power of 2.
 };
@@ -103,6 +110,9 @@ class LimLog {
 
     /// Produce log data to \p BlockingBuffer in each thread.
     void produce(const char *data, size_t n);
+
+    /// Increase BlockingBuffer consumable position.
+    void incConsumable(uint32_t n);
 
     /// List log related statistic.
     void listStatistic() const;
@@ -167,6 +177,7 @@ class LogLine {
     const char *file_;
     const char *function_;
     uint32_t line_;
+    uint32_t count_; // count of a log line bytes.
 };
 
 /// Set log level, defalt WARN.
@@ -188,6 +199,10 @@ void produceLog(const char *data, size_t n);
 
 /// List logging system related data.
 // void listLogStatistic();
+
+/// Move consumable position with increaing to ensure a complete log is consumed
+/// each time.
+void incConsumablePos(uint32_t n);
 
 } // namespace limlog
 
