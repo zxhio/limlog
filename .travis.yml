@@ -1,0 +1,22 @@
+language: cpp
+
+sudo: required
+
+matrix:
+  include:
+    - name: "GCC-8"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+      env:
+        - CC: gcc-8
+        - CXX: g++-8
+
+before_script:
+  - ulimit -c unlimited -S       # enable core dumps
+
+script:
+  - make
