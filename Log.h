@@ -162,6 +162,8 @@ class LogLine {
     /// Overloaded functions with various types of argument.
     LogLine &operator<<(bool arg);
     LogLine &operator<<(char arg);
+    LogLine &operator<<(int16_t arg);
+    LogLine &operator<<(uint16_t arg);
     LogLine &operator<<(int32_t arg);
     LogLine &operator<<(uint32_t arg);
     LogLine &operator<<(int64_t arg);
@@ -185,7 +187,7 @@ void setLogLevel(LogLevel level);
 
 /// Get log level.
 LogLevel getLogLevel();
-std::string stringifyLogLevel(LogLevel level);
+const char *stringifyLogLevel(LogLevel level);
 
 /// Set log file (basename and dir, no suffix), defalut `./run`.
 /// The Program will automatically add suffix (`.log`).

@@ -3,7 +3,7 @@ CXX = g++
 CFLAGS = -std=c++11 -Wall -O3 -g -fno-common
 LIBS = -L. -lpthread
 
-LIB_SRCS = Timestamp.cpp Log.cpp
+LIB_SRCS = Timestamp.cpp Log.cpp NumToString.cpp
 LIB_OBJS = $(LIB_SRCS:.cpp=.o)
 
 TEST_SRCS = LogTest.cpp

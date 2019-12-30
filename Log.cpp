@@ -10,6 +10,7 @@
 
 #include "Log.h"
 #include "Timestamp.h"
+#include "NumToString.h"
 
 #include <chrono>
 
@@ -333,23 +334,45 @@ LogLine &LogLine::operator<<(char arg) {
     return *this;
 }
 
+LogLine &LogLine::operator<<(int16_t arg) {
+    char tmp[8];
+    int len = util::i16toa(arg, tmp);
+    append(tmp, len);
+    return *this;
+}
+
+LogLine &LogLine::operator<<(uint16_t arg) {
+    char tmp[8];
+    int len = util::u16toa(arg, tmp);
+    append(tmp, len);
+    return *this;
+}
+
 LogLine &LogLine::operator<<(int32_t arg) {
-    append(std::to_string(arg).c_str());
+    char tmp[12];
+    int len = util::i32toa(arg, tmp);
+    append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(uint32_t arg) {
-    append(std::to_string(arg).c_str());
+    char tmp[12];
+    int len = util::u32toa(arg, tmp);
+    append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(int64_t arg) {
-    append(std::to_string(arg).c_str());
+    char tmp[24];
+    int len = util::i64toa(arg, tmp);
+    append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(uint64_t arg) {
-    append(std::to_string(arg).c_str());
+    char tmp[24];
+    int len = util::u64toa(arg, tmp);
+    append(tmp, len);
     return *this;
 }
 
@@ -376,7 +399,7 @@ void setRollSize(uint32_t nMb) { LimLog::singleton()->setRollSize(nMb); }
 LogLevel getLogLevel() { return LimLog::singleton()->getLogLevel(); }
 
 // Stringify log level with width of 5.
-std::string stringifyLogLevel(LogLevel level) {
+const char *stringifyLogLevel(LogLevel level) {
     switch (level) {
     case LogLevel::FATAL:
         return "FATAL";
