@@ -14,8 +14,12 @@
 
 #include <chrono>
 
+#ifdef __linux
 #include <unistd.h>
-#include <sys/syscall.h>
+#include <sys/syscall.h> // gettid().
+#else
+#include <sstream>
+#endif
 
 #include <stdlib.h>
 
@@ -28,8 +32,15 @@ thread_local pid_t tid = 0;
 
 // \TODO get thread id in windows.
 pid_t gettid() {
-    if (tid == 0)
+    if (tid == 0) {
+#ifdef __linux
         tid = syscall(__NR_gettid);
+#else
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        ss >> tid;
+#endif
+    }
     return tid;
 }
 
