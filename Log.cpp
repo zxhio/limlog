@@ -30,7 +30,6 @@ LimLog LimLog::singletonLog;
 
 thread_local pid_t tid = 0;
 
-// \TODO get thread id in windows.
 pid_t gettid() {
     if (tid == 0) {
 #ifdef __linux
@@ -239,7 +238,6 @@ LimLog::~LimLog() {
 
 // Sink log info to file with async.
 void LimLog::sinkThreadFunc() {
-    // \fixed me, it will enter infinity if compile with -O3 .
     while (!threadExit_) {
         // move front-end data to internal buffer.
         {
