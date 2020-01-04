@@ -188,10 +188,12 @@ LimLog::LimLog()
       threadExit_(false),
       outputFull_(false),
       level_(LogLevel::WARN),
-      bufferSize_(1 << 24),
       sinkCount_(0),
-      perConsumeBytes_(0),
+      logCount_(0),
+      totalSinkTimes_(0),
       totalConsumeBytes_(0),
+      perConsumeBytes_(0),
+      bufferSize_(1 << 24),
       outputBuffer_(nullptr),
       doubleBuffer_(nullptr),
       threadBuffers_(),
@@ -279,7 +281,11 @@ void LimLog::sinkThreadFunc() {
             hitEmptyCond_.notify_one();
             proceedCond_.wait_for(lock, std::chrono::microseconds(50));
         } else {
+            uint64_t beginTime = util::Timestamp::now().timestamp();
             logSink_.sink(outputBuffer_, perConsumeBytes_);
+            uint64_t endTime = util::Timestamp::now().timestamp();
+
+            totalSinkTimes_ += endTime - beginTime;
             sinkCount_++;
             totalConsumeBytes_ += perConsumeBytes_;
             perConsumeBytes_ = 0;
@@ -299,16 +305,27 @@ void LimLog::produce(const char *data, size_t n) {
     blockingBuffer_->produce(data, n);
 }
 
-void LimLog::incConsumable(uint32_t n) { blockingBuffer_->incConsumablePos(n); }
+void LimLog::incConsumable(uint32_t n) {
+    blockingBuffer_->incConsumablePos(n);
+    logCount_++;
+}
 
 // List related data of loggin system.
 // \TODO add average sink time.
 void LimLog::listStatistic() const {
+    printf("\n");
     printf("=== Logging System Related Data ===\n");
-    printf("  Sink data to file count: [%u]\n", sinkCount_);
-    printf("  Total sink bytes: [%lu]\n", totalConsumeBytes_);
-    printf("  Average sink bytes: [%lu]\n\n",
+    printf("  Total produced logs count: [%lu].\n", logCount_);
+    printf("  Total bytes of sinking to file: [%lu] bytes.\n",
+           totalConsumeBytes_);
+    printf("  Average bytes of sinking to file: [%lu] bytes.\n",
            sinkCount_ == 0 ? 0 : totalConsumeBytes_ / sinkCount_);
+    printf("  Count of sinking to file: [%u].\n", sinkCount_);
+    printf("  Total microseconds takes of sinking to file: [%lu] us.\n",
+           totalSinkTimes_);
+    printf("  Average microseconds takes of sinking to file: [%lu] us.\n",
+           totalSinkTimes_ / sinkCount_);
+    printf("\n");
 }
 
 LogLine::LogLine(LogLevel level, const char *file, const char *function,
