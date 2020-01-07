@@ -14,6 +14,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 #include <stdint.h> // uint32_t
 #include <stdio.h>
@@ -37,7 +38,7 @@ class LogSink {
     void setRollSize(uint32_t size) { rollSize_ = size; }
 
     void rollFile();
-    ssize_t sink(const char *data, size_t len);
+    size_t sink(const char *data, size_t len);
 
   private:
     uint32_t fileCount_;    // file roll count.
@@ -132,14 +133,14 @@ class LimLog {
     bool threadExit_; // background thread exit flag.
     bool outputFull_; // output buffer full flag.
     LogLevel level_;
-    uint32_t sinkCount_;         // count of sinking to file.
-    uint64_t logCount_;          // count of produced logs.
-    uint64_t totalSinkTimes_;    // total time takes of sinking to file.
-    uint64_t totalConsumeBytes_; // total consume bytes.
-    uint32_t perConsumeBytes_;   // bytes of consume first-end data per loop.
-    uint32_t bufferSize_;        // two buffer size.
-    char *outputBuffer_;         // first internal buffer.
-    char *doubleBuffer_;         // second internal buffer.
+    uint32_t sinkCount_;             // count of sinking to file.
+    std::atomic<uint64_t> logCount_; // count of produced logs.
+    uint64_t totalSinkTimes_;        // total time takes of sinking to file.
+    uint64_t totalConsumeBytes_;     // total consume bytes.
+    uint32_t perConsumeBytes_; // bytes of consume first-end data per loop.
+    uint32_t bufferSize_;      // two buffer size.
+    char *outputBuffer_;       // first internal buffer.
+    char *doubleBuffer_;       // second internal buffer.
     std::vector<BlockingBuffer *> threadBuffers_;
     std::thread sinkThread_;
     std::mutex bufferMutex_; // internel buffer mutex.

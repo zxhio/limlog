@@ -12,13 +12,16 @@
 #include "Timestamp.h"
 #include "NumToString.h"
 
+#include <algorithm>
 #include <chrono>
 
 #ifdef __linux
 #include <unistd.h>
 #include <sys/syscall.h> // gettid().
+typedef pid_t thread_id_t;
 #else
 #include <sstream>
+typedef unsigned int thread_id_t; // MSVC
 #endif
 
 #include <stdlib.h>
@@ -28,19 +31,19 @@ namespace limlog {
 thread_local BlockingBuffer *LimLog::blockingBuffer_ = nullptr;
 LimLog LimLog::singletonLog;
 
-thread_local pid_t tid = 0;
+thread_local thread_id_t t_tid = 0;
 
-pid_t gettid() {
-    if (tid == 0) {
+thread_id_t gettid() {
+    if (t_tid == 0) {
 #ifdef __linux
-        tid = syscall(__NR_gettid);
+        t_tid = syscall(__NR_gettid);
 #else
         std::stringstream ss;
         ss << std::this_thread::get_id();
-        ss >> tid;
+        ss >> t_tid;
 #endif
     }
-    return tid;
+    return t_tid;
 }
 
 // LogSink constructor
@@ -99,7 +102,7 @@ void LogSink::rollFile() {
     fileCount_++;
 }
 
-ssize_t LogSink::sink(const char *data, size_t len) {
+size_t LogSink::sink(const char *data, size_t len) {
     uint64_t rollBytes = rollSize_ * kBytesPerMb;
     if (writtenBytes_ % rollBytes + len > rollBytes)
         rollFile();
@@ -126,17 +129,17 @@ ssize_t LogSink::sink(const char *data, size_t len) {
 // used() may be called by different threads, so add memory barrier to ensure
 // the lasted *Pos_ is read.
 uint32_t BlockingBuffer::used() const {
-    asm volatile("lfence" ::: "memory");
+    std::atomic_thread_fence(std::memory_order_acquire);
     return producePos_ - consumePos_;
 }
 
 void BlockingBuffer::incConsumablePos(uint32_t n) {
-    asm volatile("sfence" ::: "memory");
     consumablePos_ += n;
+    std::atomic_thread_fence(std::memory_order_release);
 };
 
 uint32_t BlockingBuffer::consumable() const {
-    asm volatile("lfence" ::: "memory");
+    std::atomic_thread_fence(std::memory_order_acquire);
     return consumablePos_ - consumePos_;
 }
 
@@ -154,9 +157,8 @@ uint32_t BlockingBuffer::consume(char *to, uint32_t n) {
     // then put the rest at beginning of the buffer.
     memcpy(to + off2End, storage_, avail - off2End);
 
-    asm volatile("sfence" ::: "memory");
-
     consumePos_ += avail;
+    std::atomic_thread_fence(std::memory_order_release);
 
     return avail;
 }
@@ -175,10 +177,9 @@ void BlockingBuffer::produce(const char *from, uint32_t n) {
     // then put the rest at beginning of the buffer.
     memcpy(storage_, from + off2End, n - off2End);
 
-    asm volatile("sfence" ::: "memory");
-
     produceCount_++;
     producePos_ += n;
+    std::atomic_thread_fence(std::memory_order_release);
 }
 
 // LimLog Constructor.
@@ -307,15 +308,15 @@ void LimLog::produce(const char *data, size_t n) {
 
 void LimLog::incConsumable(uint32_t n) {
     blockingBuffer_->incConsumablePos(n);
-    logCount_++;
+    logCount_.fetch_add(1, std::memory_order_relaxed);
 }
 
 // List related data of loggin system.
-// \TODO add average sink time.
+// \TODO write this info to file and stdout with stream.
 void LimLog::listStatistic() const {
     printf("\n");
     printf("=== Logging System Related Data ===\n");
-    printf("  Total produced logs count: [%lu].\n", logCount_);
+    printf("  Total produced logs count: [%lu].\n", logCount_.load());
     printf("  Total bytes of sinking to file: [%lu] bytes.\n",
            totalConsumeBytes_);
     printf("  Average bytes of sinking to file: [%lu] bytes.\n",

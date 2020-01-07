@@ -31,10 +31,9 @@ Timestamp Timestamp::now() {
     gettimeofday(&tv, NULL);
     timestamp = tv.tv_sec * kMicrosecondOneSecond + tv.tv_usec;
 #else
-    timestamp =
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::high_resolution_clock().now().time_since_epoch())
-            .count();
+    timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock().now().time_since_epoch())
+                    .count();
 #endif
 
     return Timestamp(timestamp);
@@ -61,8 +60,10 @@ std::string Timestamp::date() const { return std::string(datetime(), 0, 8); }
 
 std::string Timestamp::formatTimestamp() const {
     char format[28];
-    snprintf(format, sizeof(format), "%s.%06lu", datetime().c_str(),
-             timestamp_ % kMicrosecondOneSecond);
+    unsigned int microseconds =
+        static_cast<unsigned int>(timestamp_ % kMicrosecondOneSecond);
+    snprintf(format, sizeof(format), "%s.%06u", datetime().c_str(),
+             microseconds);
     return format;
 }
 
