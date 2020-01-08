@@ -18,7 +18,7 @@ using namespace limlog;
 using namespace util;
 
 const int kLogTestCount = 1e5;
-const int kTestThreadCount = 6;
+const int kTestThreadCount = 2;
 int test_count = 0;
 int test_pass = 0;
 
@@ -226,7 +226,7 @@ void test_itoa() {
         func();                                                                \
         uint64_t end = Timestamp::now().timestamp();                           \
         fprintf(stdout,                                                        \
-                "thread: %d, %d (%s) logs takes %lu us, average: %.2lf us\n",  \
+                "thread: %d, %d (%s) logs takes %ju us, average: %.2lf us\n",  \
                 idx, kLogTestCount *n, type, end - start,                      \
                 static_cast<double>(end - start) / kLogTestCount / n);         \
     } while (0)
@@ -354,7 +354,7 @@ void log_10_diff_element_len(const char *data, size_t n, const char *type,
 
     uint64_t end = Timestamp::now().timestamp();
     fprintf(stdout,
-            "thread: %d, %d (%s) logs takes %lu us, average: %.2lf us\n",
+            "thread: %d, %d (%s) logs takes %ju us, average: %.2lf us\n",
             thread_idx, kLogTestCount, type, end - start,
             static_cast<double>(end - start) / kLogTestCount);
 }
@@ -377,7 +377,7 @@ void log_10_diff_element_len(const std::string &s, const char *type,
 
     uint64_t end = Timestamp::now().timestamp();
     fprintf(stdout,
-            "thread: %d, %d (%s) logs takes %lu us, average: %.2lf us\n",
+            "thread: %d, %d (%s) logs takes %ju us, average: %.2lf us\n",
             thread_idx, kLogTestCount, type, end - start,
             static_cast<double>(end - start) / kLogTestCount);
 }

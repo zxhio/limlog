@@ -47,22 +47,22 @@ thread_id_t gettid() {
 }
 
 // LogSink constructor
-LogSink::LogSink()
-    : fileCount_(0),
-      rollSize_(10),
-      writtenBytes_(0),
-      fileName_(kDefaultLogFile),
-      fp_(nullptr) {
-    rollFile();
-}
+LogSink::LogSink() : LogSink(10) {}
 
 LogSink::LogSink(uint32_t rollSize)
     : fileCount_(0),
       rollSize_(rollSize),
       writtenBytes_(0),
       fileName_(kDefaultLogFile),
+      date_(util::Timestamp::now().date()),
       fp_(nullptr) {
-    rollFile();
+
+    std::string file(fileName_ + ".log"); // default.
+    fp_ = fopen(file.c_str(), "a+");
+    if (!fp_) {
+        fprintf(stderr, "Faild to open file:%s\n", file.c_str());
+        exit(-1);
+    }
 }
 
 LogSink::~LogSink() {
@@ -76,22 +76,15 @@ void LogSink::setLogFile(const char *file) {
     rollFile();
 }
 
-// \TODO auto roll file with time.
 void LogSink::rollFile() {
     if (fp_)
         fclose(fp_);
 
-    std::string file;
-    if (fileName_ == kDefaultLogFile) {
-        // default format, `./run.log`
-        file = fileName_ + ".log";
-    } else {
-        std::string time = util::Timestamp::now().time();
-        std::string date = util::Timestamp::now().date();
-        // use setting file format, `dir/file.date.time.filecount.log`
-        file = fileName_ + '.' + date + '.' + time + '.' +
-               std::to_string(fileCount_) + ".log";
-    }
+    std::string file(fileName_ + '.' + date_);
+    if (fileCount_)
+        file += '.' + std::to_string(fileCount_) + ".log";
+    else
+        file += ".log";
 
     fp_ = fopen(file.c_str(), "a+");
     if (!fp_) {
@@ -103,6 +96,13 @@ void LogSink::rollFile() {
 }
 
 size_t LogSink::sink(const char *data, size_t len) {
+    std::string today(util::Timestamp::now().date());
+    if (date_.compare(today)) {
+        date_.assign(today);
+        fileCount_ = 0;
+        rollFile();
+    }
+
     uint64_t rollBytes = rollSize_ * kBytesPerMb;
     if (writtenBytes_ % rollBytes + len > rollBytes)
         rollFile();
@@ -316,15 +316,15 @@ void LimLog::incConsumable(uint32_t n) {
 void LimLog::listStatistic() const {
     printf("\n");
     printf("=== Logging System Related Data ===\n");
-    printf("  Total produced logs count: [%lu].\n", logCount_.load());
-    printf("  Total bytes of sinking to file: [%lu] bytes.\n",
+    printf("  Total produced logs count: [%ju].\n", logCount_.load());
+    printf("  Total bytes of sinking to file: [%ju] bytes.\n",
            totalConsumeBytes_);
-    printf("  Average bytes of sinking to file: [%lu] bytes.\n",
+    printf("  Average bytes of sinking to file: [%ju] bytes.\n",
            sinkCount_ == 0 ? 0 : totalConsumeBytes_ / sinkCount_);
     printf("  Count of sinking to file: [%u].\n", sinkCount_);
-    printf("  Total microseconds takes of sinking to file: [%lu] us.\n",
+    printf("  Total microseconds takes of sinking to file: [%ju] us.\n",
            totalSinkTimes_);
-    printf("  Average microseconds takes of sinking to file: [%lu] us.\n",
+    printf("  Average microseconds takes of sinking to file: [%ju] us.\n",
            totalSinkTimes_ / sinkCount_);
     printf("\n");
 }
@@ -337,8 +337,11 @@ LogLine::LogLine(LogLevel level, const char *file, const char *function,
 }
 
 LogLine::~LogLine() {
-    *this << " - " << file_ << ':' << function_
-          << "():" << std::to_string(line_) << '\n';
+    *this <<
+#ifndef NOT_FILE_FUNC_LINE
+        " - " << file_ << ':' << function_ << "():" << std::to_string(line_) <<
+#endif
+        '\n';
     incConsumablePos(count_); // already produce a complete log.
 }
 

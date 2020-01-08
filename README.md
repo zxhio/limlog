@@ -20,13 +20,15 @@ $ make
 
 每条日志格式及日志文件名如下：
 ```c
-test_log_file.20200102.134931.1.log
+test_log_file.20200102.1.log
 
 20200102 13:49:31.669000 3 DEBUG  true - LogTest.cpp:log_1_same_element_x6():242
 20200102 13:49:31.669000 3 DEBUG  c - LogTest.cpp:log_1_same_element_x6():245
 20200102 13:49:31.670000 3 DEBUG  c@string - LogTest.cpp:log_1_same_element_x6():248
 20200102 13:49:31.670000 3 DEBUG  std::string - LogTest.cpp:log_1_same_element_x6():252
 ```
+
+若是日志行不需要后缀如 `LogTest.cpp:log_1_same_element_x6():242`, 可以添加编译宏 `NOT_FILE_FUNC_LINE` 来控制。
 
 ### 使用
 用法同 `std::cout`
@@ -49,7 +51,7 @@ int main() {
 
 ### 性能
 
-测试的机器为 i7 9700k@8 Linux 4.4(WSL)
+测试的机器为 i7 9700k@8 Linux 4.4(WSL), MSVC 跑了几个用例耗时大概是WSL一半左右，这里后面具体测一下。
 
 测试用例如下
 

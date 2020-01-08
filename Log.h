@@ -27,7 +27,7 @@ enum LogLevel : uint8_t { TRACE, DEBUG, INFO, WARN, ERROR, FATAL };
 
 /// Sink log info on file, and the file automatic roll with a setting size.
 /// If set log file, the log file format is
-/// `dir/filename.date.time.filecount.log `, default is `./run.log`.
+/// `dir/filename.date.time.filecount.log `, default is `./(kDefaultLogFile).log`.
 class LogSink {
   public:
     LogSink();
@@ -45,9 +45,10 @@ class LogSink {
     uint32_t rollSize_;     // size of MB.
     uint64_t writtenBytes_; // total written bytes.
     std::string fileName_;
+    std::string date_;
     FILE *fp_;
     static const uint32_t kBytesPerMb = 1 << 20;
-    static constexpr const char *kDefaultLogFile = "./run";
+    static constexpr const char *kDefaultLogFile = "./limlog";
 };
 
 /// Circle FIFO blocking produce/consume byte queue. Hold log info to wait for
