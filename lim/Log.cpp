@@ -303,7 +303,7 @@ void LimLog::produce(const char *data, size_t n) {
         threadBuffers_.push_back(blockingBuffer_);
     }
 
-    blockingBuffer_->produce(data, n);
+    blockingBuffer_->produce(data, static_cast<uint32_t>(n));
 }
 
 void LimLog::incConsumable(uint32_t n) {
@@ -331,14 +331,20 @@ void LimLog::listStatistic() const {
 
 LogLine::LogLine(LogLevel level, const char *file, const char *function,
                  uint32_t line)
-    : file_((file)), function_(function), line_(line), count_(0) {
+    :
+#ifndef NO_FILE_FUNC_LINE
+      file_((file)),
+      function_(function),
+      line_(line),
+#endif
+      count_(0) {
     *this << util::Timestamp::now().formatTimestamp() << ' ' << gettid() << ' '
           << stringifyLogLevel(level) << "  ";
 }
 
 LogLine::~LogLine() {
     *this <<
-#ifndef NOT_FILE_FUNC_LINE
+#ifndef NO_FILE_FUNC_LINE
         " - " << file_ << ':' << function_ << "():" << std::to_string(line_) <<
 #endif
         '\n';

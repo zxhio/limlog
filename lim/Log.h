@@ -27,7 +27,7 @@ enum LogLevel : uint8_t { TRACE, DEBUG, INFO, WARN, ERROR, FATAL };
 
 /// Sink log info on file, and the file automatic roll with a setting size.
 /// If set log file, the log file format is
-/// `dir/filename.date.time.filecount.log `, default is `./(kDefaultLogFile).log`.
+/// `dir/filename.date.filecount.log `, default is `./(kDefaultLogFile).log`.
 class LogSink {
   public:
     LogSink();
@@ -180,9 +180,11 @@ class LogLine {
     void append(const char *data, size_t len);
     void append(const char *data);
 
+#ifndef NO_FILE_FUNC_LINE
     const char *file_;
     const char *function_;
     uint32_t line_;
+#endif
     uint32_t count_; // count of a log line bytes.
 };
 
