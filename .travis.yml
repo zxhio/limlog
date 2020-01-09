@@ -19,4 +19,6 @@ before_script:
   - ulimit -c unlimited -S       # enable core dumps
 
 script:
+  - mkdir build && cd build
+  - cmake ..
   - make

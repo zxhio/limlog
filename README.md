@@ -8,8 +8,7 @@ limlog 代码文件较少，可以直接自行编译，也可以将 `Log.h` 和�
 ```sh
 $ git clone https://github.com/zxhio/limlog.git
 $ cd limlog
-$ mkdir build
-$ cd build
+$ mkdir build && cd build
 $ cmake [-DLIMLOG_NO_FILE_FUNC_LINE=ON] ..
 $ make
 ```
