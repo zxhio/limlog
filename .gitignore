@@ -1,0 +1,7 @@
+.vs/
+build/
+lib/
+out/
+*.log
+*.json
+*.txt
