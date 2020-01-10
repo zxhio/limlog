@@ -216,6 +216,9 @@ void incConsumablePos(uint32_t n);
 
 /// Create a logline with log level \p level .
 /// Custom macro \p __REL_FILE__ is relative file path as filename.
+#ifndef __REL_FILE__
+#define __REL_FILE__ __FILE__
+#endif
 #define LOG(level)                                                             \
     if (limlog::getLogLevel() <= level)                                        \
     LogLine(level, __REL_FILE__, __FUNCTION__, __LINE__)
