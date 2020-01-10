@@ -12,6 +12,8 @@ else()
 	set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wall -Werror")
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__REL_FILE__='\"$(subst ${PROJECT_SOURCE_DIR}/,,$(abspath $<))\"'")
+
 if (LIMLOG_CLANG)
 	set(CMAKE_CXX_COMPILER "clang++")
 endif()

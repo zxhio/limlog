@@ -214,9 +214,11 @@ void incConsumablePos(uint32_t n);
 
 } // namespace limlog
 
+/// Create a logline with log level \p level .
+/// Custom macro \p __REL_FILE__ is relative file path as filename.
 #define LOG(level)                                                             \
     if (limlog::getLogLevel() <= level)                                        \
-    LogLine(level, __FILE__, __FUNCTION__, __LINE__)
+    LogLine(level, __REL_FILE__, __FUNCTION__, __LINE__)
 
 #define LOG_TRACE LOG(limlog::LogLevel::TRACE)
 #define LOG_DEBUG LOG(limlog::LogLevel::DEBUG)
