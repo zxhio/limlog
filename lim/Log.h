@@ -221,7 +221,7 @@ void incConsumablePos(uint32_t n);
 #endif
 #define LOG(level)                                                             \
     if (limlog::getLogLevel() <= level)                                        \
-    LogLine(level, __REL_FILE__, __FUNCTION__, __LINE__)
+    limlog::LogLine(level, __REL_FILE__, __FUNCTION__, __LINE__)
 
 #define LOG_TRACE LOG(limlog::LogLevel::TRACE)
 #define LOG_DEBUG LOG(limlog::LogLevel::DEBUG)
