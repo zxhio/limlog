@@ -29,7 +29,6 @@ typedef unsigned int thread_id_t; // MSVC
 namespace limlog {
 
 thread_local BlockingBuffer *LimLog::blockingBuffer_ = nullptr;
-LimLog LimLog::singletonLog;
 
 thread_local thread_id_t t_tid = 0;
 
@@ -214,21 +213,21 @@ LimLog::LimLog()
 LimLog::~LimLog() {
     {
         // notify background thread befor the object detoryed.
-        std::unique_lock<std::mutex> lock(singletonLog.condMutex_);
-        singletonLog.threadSync_ = true;
-        singletonLog.proceedCond_.notify_all();
-        singletonLog.hitEmptyCond_.wait(lock);
+        std::unique_lock<std::mutex> lock(condMutex_);
+        threadSync_ = true;
+        proceedCond_.notify_all();
+        hitEmptyCond_.wait(lock);
     }
 
     {
         // stop sink thread.
         std::lock_guard<std::mutex> lock(condMutex_);
-        singletonLog.threadExit_ = true;
-        singletonLog.proceedCond_.notify_all();
+        threadExit_ = true;
+        proceedCond_.notify_all();
     }
 
-    if (singletonLog.sinkThread_.joinable())
-        singletonLog.sinkThread_.join();
+    if (sinkThread_.joinable())
+        sinkThread_.join();
 
     free(outputBuffer_);
     free(doubleBuffer_);
@@ -236,7 +235,12 @@ LimLog::~LimLog() {
     for (auto &buf : threadBuffers_)
         free(buf);
 
-    singletonLog.listStatistic();
+    listStatistic();
+}
+
+LimLog *LimLog::singleton() {
+    static LimLog s_limlog;
+    return &s_limlog;
 }
 
 // Sink log info to file with async.

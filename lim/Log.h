@@ -108,7 +108,7 @@ class LimLog {
     void setRollSize(uint32_t size) { logSink_.setRollSize(size); };
 
     /// Singleton pointer.
-    static LimLog *singleton() { return &singletonLog; }
+    static LimLog *singleton();
 
     /// Produce log data to \p BlockingBuffer in each thread.
     void produce(const char *data, size_t n);
@@ -148,7 +148,6 @@ class LimLog {
     std::mutex condMutex_;
     std::condition_variable proceedCond_;  // for background thread to proceed.
     std::condition_variable hitEmptyCond_; // for no data to consume.
-    static LimLog singletonLog;
     static thread_local BlockingBuffer *blockingBuffer_;
 };
 
