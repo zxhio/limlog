@@ -119,7 +119,7 @@ size_t LogSink::sink(const char *data, size_t len) {
         n += x;
         remain -= x;
     }
-
+    fflush(fp_);
     writtenBytes_ += len - remain;
 
     return len - remain;
