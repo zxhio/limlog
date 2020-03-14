@@ -329,7 +329,7 @@ void LimLog::listStatistic() const {
     printf("  Total microseconds takes of sinking to file: [%ju] us.\n",
            totalSinkTimes_);
     printf("  Average microseconds takes of sinking to file: [%ju] us.\n",
-           totalSinkTimes_ / sinkCount_);
+           sinkCount_ == 0 ? 0 : totalSinkTimes_ / sinkCount_);
     printf("\n");
 }
 
