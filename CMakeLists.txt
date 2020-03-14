@@ -22,7 +22,5 @@ if (LIMLOG_NO_FILE_FUNC_LINE)
 	add_definitions(-DNO_FILE_FUNC_LINE)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/lim)
-
 add_subdirectory(lim)
 add_subdirectory(tests)
