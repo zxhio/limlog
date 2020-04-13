@@ -17,5 +17,5 @@ if (LIMLOG_CLANG)
 	set(CMAKE_CXX_COMPILER "clang++")
 endif()
 
-add_subdirectory(lim)
+add_subdirectory(limlog)
 add_subdirectory(tests)

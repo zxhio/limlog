@@ -7,9 +7,9 @@
 // Date:    2019/12/12 11:41:58
 //===----------------------------------------------------------------------===//
 
-#include "../lim/Log.h"
-#include "../lim/Timestamp.h"
-#include "../lim/NumToString.h"
+#include "../limlog/Log.h"
+#include "../limlog/Timestamp.h"
+#include "../limlog/NumToString.h"
 
 #include <assert.h>
 #include <stdio.h>
