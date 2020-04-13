@@ -26,8 +26,7 @@ namespace limlog {
 enum LogLevel : uint8_t { TRACE, DEBUG, INFO, WARN, ERROR, FATAL };
 
 /// Sink log info on file, and the file automatic roll with a setting size.
-/// If set log file, the log file format is
-/// `dir/filename.date.filecount.log `, default is `./(kDefaultLogFile).log`.
+/// If set log file, initially the log file format is `filename.date.log `.
 class LogSink {
   public:
     LogSink();
@@ -37,7 +36,10 @@ class LogSink {
     void setLogFile(const char *file);
     void setRollSize(uint32_t size) { rollSize_ = size; }
 
+    /// Roll File with size. The new filename contain log file count.
     void rollFile();
+
+    /// Sink log data \p data of length \p len to file.
     size_t sink(const char *data, size_t len);
 
   private:
@@ -48,7 +50,9 @@ class LogSink {
     std::string date_;
     FILE *fp_;
     static const uint32_t kBytesPerMb = 1 << 20;
-    static constexpr const char *kDefaultLogFile = "./limlog";
+    static constexpr const char *kDefaultLogFile = "limlog";
+
+    size_t write(const char *data, size_t len);
 };
 
 /// Circle FIFO blocking produce/consume byte queue. Hold log info to wait for

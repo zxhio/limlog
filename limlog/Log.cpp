@@ -54,15 +54,7 @@ LogSink::LogSink(uint32_t rollSize)
       writtenBytes_(0),
       fileName_(kDefaultLogFile),
       date_(util::Timestamp::now().date()),
-      fp_(nullptr) {
-
-    std::string file(fileName_ + ".log"); // default.
-    fp_ = fopen(file.c_str(), "a+");
-    if (!fp_) {
-        fprintf(stderr, "Faild to open file:%s\n", file.c_str());
-        exit(-1);
-    }
-}
+      fp_(nullptr) {}
 
 LogSink::~LogSink() {
     if (fp_)
@@ -95,6 +87,9 @@ void LogSink::rollFile() {
 }
 
 size_t LogSink::sink(const char *data, size_t len) {
+    if (fp_ == nullptr)
+        rollFile();
+
     std::string today(util::Timestamp::now().date());
     if (date_.compare(today)) {
         date_.assign(today);
@@ -106,6 +101,10 @@ size_t LogSink::sink(const char *data, size_t len) {
     if (writtenBytes_ % rollBytes + len > rollBytes)
         rollFile();
 
+    return write(data, len);
+}
+
+size_t LogSink::write(const char *data, size_t len) {
     size_t n = fwrite(data, 1, len, fp_);
     size_t remain = len - n;
     while (remain > 0) {
@@ -119,6 +118,7 @@ size_t LogSink::sink(const char *data, size_t len) {
         n += x;
         remain -= x;
     }
+
     fflush(fp_);
     writtenBytes_ += len - remain;
 
