@@ -151,6 +151,21 @@ class LimLog {
     static thread_local BlockingBuffer *blockingBuffer_;
 };
 
+/// Log Location, include file, function, line.
+struct LogLoc {
+  public:
+    LogLoc() : LogLoc("", "", 0) {}
+
+    LogLoc(const char *file, const char *function, uint32_t line)
+        : file_(file), function_(function), line_(line) {}
+
+    bool empty() const { return line_ == 0; }
+
+    const char *file_;
+    const char *function_;
+    uint32_t line_;
+};
+
 /// A line log info, usage is same as 'std::cout'.
 // Log format in memory.
 //  +------+-----------+-------+------+------+----------+------+
@@ -158,8 +173,7 @@ class LimLog {
 //  +------+-----------+-------+------+------+----------+------+
 class LogLine {
   public:
-    LogLine(LogLevel level, const char *file, const char *function,
-            uint32_t line);
+    LogLine(LogLevel level, const LogLoc &loc);
     ~LogLine();
 
     /// Overloaded functions with various types of argument.
@@ -174,17 +188,14 @@ class LogLine {
     LogLine &operator<<(double arg);
     LogLine &operator<<(const char *arg);
     LogLine &operator<<(const std::string &arg);
+    LogLine &operator<<(const LogLoc &loc);
 
   private:
     void append(const char *data, size_t len);
     void append(const char *data);
 
-#ifndef NO_FILE_FUNC_LINE
-    const char *file_;
-    const char *function_;
-    uint32_t line_;
-#endif
     uint32_t count_; // count of a log line bytes.
+    LogLoc loc_;
 };
 
 /// Set log level, defalt WARN.
@@ -213,18 +224,33 @@ void incConsumablePos(uint32_t n);
 
 } // namespace limlog
 
-/// Create a logline with log level \p level .
 /// Custom macro \p __REL_FILE__ is relative file path as filename.
 #ifndef __REL_FILE__
 #define __REL_FILE__ __FILE__
 #endif
-#define LOG(level)                                                             \
-    if (limlog::getLogLevel() <= level)                                        \
-    limlog::LogLine(level, __REL_FILE__, __FUNCTION__, __LINE__)
 
-#define LOG_TRACE LOG(limlog::LogLevel::TRACE)
-#define LOG_DEBUG LOG(limlog::LogLevel::DEBUG)
-#define LOG_INFO LOG(limlog::LogLevel::INFO)
-#define LOG_WARN LOG(limlog::LogLevel::WARN)
-#define LOG_ERROR LOG(limlog::LogLevel::ERROR)
-#define LOG_FATAL LOG(limlog::LogLevel::FATAL)
+/// Create a logline with log level \p level and the log location \p loc .
+#define LOG(level, loc)                                                        \
+    if (limlog::getLogLevel() <= level)                                        \
+    limlog::LogLine(level, loc)
+
+/// Create a logline with log level \p level , but without log localtion.
+#define LOG_N_LOC(level) LOG(level, limlog::LogLoc())
+
+#define LOG_TRACE LOG_N_LOC(limlog::LogLevel::TRACE)
+#define LOG_DEBUG LOG_N_LOC(limlog::LogLevel::DEBUG)
+#define LOG_INFO LOG_N_LOC(limlog::LogLevel::INFO)
+#define LOG_WARN LOG_N_LOC(limlog::LogLevel::WARN)
+#define LOG_ERROR LOG_N_LOC(limlog::LogLevel::ERROR)
+#define LOG_FATAL LOG_N_LOC(limlog::LogLevel::FATAL)
+
+/// Create a logline with log level \p level and the log localtion.
+#define LOG_LOC(level)                                                         \
+    LOG(level, limlog::LogLoc(__REL_FILE__, __FUNCTION__, __LINE__))
+
+#define LIM_LOG_TRACE LOG_LOC(limlog::LogLevel::TRACE)
+#define LIM_LOG_DEBUG LOG_LOC(limlog::LogLevel::DEBUG)
+#define LIM_LOG_INFO LOG_LOC(limlog::LogLevel::INFO)
+#define LIM_LOG_WARN LOG_LOC(limlog::LogLevel::WARN)
+#define LIM_LOG_ERROR LOG_LOC(limlog::LogLevel::ERROR)
+#define LIM_LOG_FATAL LOG_LOC(limlog::LogLevel::FATAL)

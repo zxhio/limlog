@@ -333,25 +333,13 @@ void LimLog::listStatistic() const {
     printf("\n");
 }
 
-LogLine::LogLine(LogLevel level, const char *file, const char *function,
-                 uint32_t line)
-    :
-#ifndef NO_FILE_FUNC_LINE
-      file_((file)),
-      function_(function),
-      line_(line),
-#endif
-      count_(0) {
+LogLine::LogLine(LogLevel level, const LogLoc &loc) : count_(0), loc_(loc) {
     *this << util::Timestamp::now().formatTimestamp() << ' ' << gettid() << ' '
           << stringifyLogLevel(level) << "  ";
 }
 
 LogLine::~LogLine() {
-    *this <<
-#ifndef NO_FILE_FUNC_LINE
-        " - " << file_ << ':' << function_ << "():" << std::to_string(line_) <<
-#endif
-        '\n';
+    *this << loc_ << '\n';
     incConsumablePos(count_); // already produce a complete log.
 }
 
@@ -428,6 +416,13 @@ LogLine &LogLine::operator<<(const char *arg) {
 
 LogLine &LogLine::operator<<(const std::string &arg) {
     append(arg.c_str(), arg.length());
+    return *this;
+}
+
+LogLine &LogLine::operator<<(const LogLoc &loc) {
+    if (!loc.empty())
+        *this << "  " << loc.file_ << ':' << loc.function_
+              << "():" << loc.line_;
     return *this;
 }
 

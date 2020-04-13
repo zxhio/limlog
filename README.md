@@ -9,7 +9,7 @@ limlog 代码文件较少，可以直接自行编译，也可以将 `Log.h` 和�
 $ git clone https://github.com/zxhio/limlog.git
 $ cd limlog
 $ mkdir build && cd build
-$ cmake [-DLIMLOG_NO_FILE_FUNC_LINE=ON] ..
+$ cmake ..
 $ make
 ```
 
@@ -30,7 +30,7 @@ test_log_file.20200102.1.log
 20200102 13:49:31.670000 3 DEBUG  std::string - LogTest.cpp:log_1_same_element_x6():252
 ```
 
-若是日志行不需要后缀如 `LogTest.cpp:log_1_same_element_x6():242`, 可以添加编译宏 `NO_FILE_FUNC_LINE` 来控制。
+若是日志行不需要后缀如 `LogTest.cpp:log_1_same_element_x6():242`, 可使用 `LIM_LOG_DEBUG` 接口。
 
 ### 使用
 用法同 `std::cout`
