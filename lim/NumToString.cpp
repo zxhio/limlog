@@ -31,10 +31,10 @@ static const char DigitsTable[200] = {
     '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9',
     '7', '9', '8', '9', '9'};
 
-static int lut_utoa(uint64_t number, char *to) {
+static size_t u2a(uint64_t number, char *to) {
     char buf[24];
     char *p = buf;
-    int length = 0;
+    size_t length = 0;
 
     while (number >= 100) {
         const unsigned idx = (number % 100) << 1;
@@ -61,36 +61,24 @@ static int lut_utoa(uint64_t number, char *to) {
     return length;
 }
 
-int lut_itoa(int64_t number, char *to) {
+size_t i2a(int64_t number, char *to) {
     uint64_t n = static_cast<uint64_t>(number);
-    int sign = 0;
+    size_t sign = 0;
     if (number < 0) {
         *to++ = '-';
         n = ~n + 1;
         sign = 1;
     }
 
-    return lut_utoa(n, to) + sign;
+    return u2a(n, to) + sign;
 }
 
-int u16toa(uint16_t number, char *to) {
-    return lut_utoa(static_cast<uint16_t>(number), to);
-}
-int u32toa(uint32_t number, char *to) {
-    return lut_utoa(static_cast<uint32_t>(number), to);
-}
-int u64toa(uint64_t number, char *to) {
-    return lut_utoa(static_cast<uint64_t>(number), to);
-}
+size_t u16toa(uint16_t n, char *to) { return u2a(n, to); }
+size_t u32toa(uint32_t n, char *to) { return u2a(n, to); }
+size_t u64toa(uint64_t n, char *to) { return u2a(n, to); }
 
-int i16toa(int16_t number, char *to) {
-    return lut_itoa(static_cast<int16_t>(number), to);
-}
-int i32toa(int32_t number, char *to) {
-    return lut_itoa(static_cast<int32_t>(number), to);
-}
-int i64toa(int64_t number, char *to) {
-    return lut_itoa(static_cast<int64_t>(number), to);
-}
+size_t i16toa(int16_t n, char *to) { return i2a(n, to); }
+size_t i32toa(int32_t n, char *to) { return i2a(n, to); }
+size_t i64toa(int64_t n, char *to) { return i2a(n, to); }
 
 } // namespace util

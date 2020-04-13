@@ -10,17 +10,18 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 namespace util {
 
-/// Conversion unsigned integer to string \p to , and return string length.
-int u16toa(uint16_t number, char *to);
-int u32toa(uint32_t number, char *to);
-int u64toa(uint64_t number, char *to);
+/// Convert unsigned integer \p n to string \p to , and return string length.
+size_t u16toa(uint16_t n, char *to);
+size_t u32toa(uint32_t n, char *to);
+size_t u64toa(uint64_t n, char *to);
 
-/// Conversion signed integer to string \p to , and return string length.
-int i16toa(int16_t number, char *to);
-int i32toa(int32_t number, char *to);
-int i64toa(int64_t number, char *to);
+/// Convert signed integer \p n to string \p to , and return string length.
+size_t i16toa(int16_t n, char *to);
+size_t i32toa(int32_t n, char *to);
+size_t i64toa(int64_t n, char *to);
 
 } // namespace util

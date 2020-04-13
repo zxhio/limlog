@@ -364,42 +364,42 @@ LogLine &LogLine::operator<<(char arg) {
 
 LogLine &LogLine::operator<<(int16_t arg) {
     char tmp[8];
-    int len = util::i16toa(arg, tmp);
+    size_t len = util::i16toa(arg, tmp);
     append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(uint16_t arg) {
     char tmp[8];
-    int len = util::u16toa(arg, tmp);
+    size_t len = util::u16toa(arg, tmp);
     append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(int32_t arg) {
     char tmp[12];
-    int len = util::i32toa(arg, tmp);
+    size_t len = util::i32toa(arg, tmp);
     append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(uint32_t arg) {
     char tmp[12];
-    int len = util::u32toa(arg, tmp);
+    size_t len = util::u32toa(arg, tmp);
     append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(int64_t arg) {
     char tmp[24];
-    int len = util::i64toa(arg, tmp);
+    size_t len = util::i64toa(arg, tmp);
     append(tmp, len);
     return *this;
 }
 
 LogLine &LogLine::operator<<(uint64_t arg) {
     char tmp[24];
-    int len = util::u64toa(arg, tmp);
+    size_t len = util::u64toa(arg, tmp);
     append(tmp, len);
     return *this;
 }
