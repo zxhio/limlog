@@ -1,7 +1,4 @@
 .vs/
-build/
-lib/
-out/
+.vscode/
 *.log
-*.json
 *.txt
