@@ -1,11 +1,19 @@
-CXX	= g++
-CXXFLAGS = -O3 -Wall -Werror -std=c++11 -I../include 
+CXX = g++
+CXXFLAGS = -std=c++11 -march=native -O3 -Wall -Werror -I../include
 LDFLAGS = -lpthread
 
-TARGET = LogTest
+SRCS =  ItoaTest.cpp \
+	TimestampTest.cpp \
+	BlockingBufferTest.cpp \
+	Benchmark.cpp
 
-all:
-	$(CXX) $(CXXFLAGS) -o $(TARGET) LogTest.cpp $(LDFLAGS)
-	
+TARGETS = $(patsubst %.cpp, %, $(SRCS))
+
+all: $(TARGETS)
+
+$(TARGETS):
+	$(CXX) $(CXXFLAGS) $@.cpp -o $@ $(LDFLAGS)
+
+.PHONY: clean
 clean:
-	rm -rf *.log $(TARGET)
+	rm -rf *.log $(TARGETS)

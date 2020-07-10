@@ -35,7 +35,7 @@ typedef unsigned int thread_id_t; // MSVC
 
 namespace limlog {
 
-thread_id_t gettid() {
+inline thread_id_t gettid() {
   static thread_local thread_id_t t_tid = 0;
 
   if (t_tid == 0) {
@@ -95,6 +95,7 @@ public:
     fileName_.assign(file);
     rollFile();
   }
+
   void setRollSize(uint32_t size) { rollSize_ = size; }
 
   /// Roll File with size. The new filename contain log file count.
@@ -470,30 +471,30 @@ public:
 };
 
 /// Set log level, defalt WARN.
-static void setLogLevel(LogLevel level) {
+inline void setLogLevel(LogLevel level) {
   LimLog::singleton()->setLogLevel(level);
 }
 
 /// Get log level.
-LogLevel getLogLevel() { return LimLog::singleton()->getLogLevel(); }
+inline LogLevel getLogLevel() { return LimLog::singleton()->getLogLevel(); }
 
 /// Set log file (basename and dir, no suffix), defalut `./run`.
 /// The Program will automatically add suffix (`.log`).
-static void setLogFile(const char *file) {
+inline void setLogFile(const char *file) {
   LimLog::singleton()->setLogFile(file);
 }
 
 /// Set log file roll size (MB), default 10 MB.
-static void setRollSize(uint32_t nMb) { LimLog::singleton()->setRollSize(nMb); }
+inline void setRollSize(uint32_t nMb) { LimLog::singleton()->setRollSize(nMb); }
 
 /// Back-end provides produce interface.
-static void produceLog(const char *data, size_t n) {
+inline void produceLog(const char *data, size_t n) {
   LimLog::singleton()->produce(data, n);
 }
 
 /// Move consumable position with increaing to ensure a complete log is consumed
 /// each time.
-static void incConsumablePos(uint32_t n) {
+inline void incConsumablePos(uint32_t n) {
   LimLog::singleton()->incConsumable(n);
 }
 
