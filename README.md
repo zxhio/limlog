@@ -2,53 +2,32 @@
 
 快速、轻量的 **C++11** 日志库。[查看细节分析](https://www.cnblogs.com/shuqin/p/12103952.html)
 
-### 安装
-limlog 代码文件较少，可以直接自行编译，也可以将 `Log.h` 和生成的 `liblimlog.a` 放到项目所在目录。
-
-```sh
-$ git clone https://github.com/zxhio/limlog.git
-$ cd limlog
-$ mkdir build && cd build
-$ cmake ..
-$ make
-```
-
-### 平台 (x86)
-- Linux (WSL)
-- Windows
-- OS X
-
-### 日志格式
-
-每条日志格式及日志文件名如下：
-```c
-test_log_file.20200102.1.log
-
-20200102 13:49:31.669000 3 DEBUG  true - LogTest.cpp:log_1_same_element_x6():242
-20200102 13:49:31.669000 3 DEBUG  c - LogTest.cpp:log_1_same_element_x6():245
-20200102 13:49:31.670000 3 DEBUG  c@string - LogTest.cpp:log_1_same_element_x6():248
-20200102 13:49:31.670000 3 DEBUG  std::string - LogTest.cpp:log_1_same_element_x6():252
-```
-
-若是日志行不需要后缀如 `LogTest.cpp:log_1_same_element_x6():242`, 可使用 `LIM_LOG_DEBUG` 接口。
+### 特点
+- 速度非常快
+- 跨平台
+- Header-Only
 
 ### 使用
 用法同 `std::cout`
 
 ```cpp
-#include "Log.h"
-#include <string>
+#include <limlog/Log.h>
+
+const char *name = "xxxxian";
 
 int main() {
-    setLogFile("./test_log_file");
-    setLogLevel(limlog::LogLevel::DEBUG);
-    setRollSize(64); // 64MB
+  setLogLevel(limlog::LogLevel::DEBUG);
 
-    std::string str("std::string");
-    LOG_DEBUG << 'c' << 65535 << -9223372036854775808 << 3.14159 << "c@string" << str;
-
-    return 0;
+  LOG_INFO << "hello, world!";
+  LOG_DEBUG << "name is: " << name << ", age is: " << 24;
+  LIM_LOG_DEBUG << "log location";
+  return 0;
 }
+
+// 日志格式如下
+//    20200710 23:18:13.165500 23311 INFO   hello, world!
+//    20200710 23:18:13.165534 23311 DEBUG  name is: xxxxian, age is: 24
+//    20200710 23:22:00.386588 24021 DEBUG  log location  foo.cpp:main():10
 ```
 
 ### 性能
