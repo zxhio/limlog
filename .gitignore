@@ -1,4 +1,6 @@
 .vs/
 .vscode/
+tests/*.o
+tests/*.d
 *.log
 *.txt

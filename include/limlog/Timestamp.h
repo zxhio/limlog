@@ -37,7 +37,7 @@ public:
     // use gettimeofday(2) is 15% faster then std::chrono in linux.
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    timestamp = tv.tv_sec * kMicroPerSec + tv.tv_usec;
+    timestamp = tv.tv_sec * kUSecPerSec + tv.tv_usec;
 #else
     timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::system_clock().now().time_since_epoch())
@@ -57,7 +57,7 @@ public:
     // reduce count of calling strftime by thread_local.
     static thread_local time_t t_second = 0;
     static thread_local char t_datetime[24]; // 20190816 15:32:25
-    time_t nowsec = timestamp_ / kMicroPerSec;
+    time_t nowsec = timestamp_ / kUSecPerSec;
     if (t_second < nowsec) {
       t_second = nowsec;
       struct tm *st_time = localtime(&t_second);
@@ -79,7 +79,7 @@ public:
   /// e.g. 20200709 14:48:36.458074
   std::string formatTimestamp() const {
     char format[28];
-    uint32_t micro = static_cast<uint32_t>(timestamp_ % kMicroPerSec);
+    uint32_t micro = static_cast<uint32_t>(timestamp_ % kUSecPerSec);
     snprintf(format, sizeof(format), "%s.%06u", datetime().c_str(), micro);
     return format;
   }
@@ -90,7 +90,7 @@ public:
 
 private:
   uint64_t timestamp_;
-  static const uint32_t kMicroPerSec = 1000000;
+  static const uint32_t kUSecPerSec = 1000000;
 };
 
 } // namespace util
