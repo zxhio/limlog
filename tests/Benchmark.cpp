@@ -21,8 +21,9 @@ const int kTestThreadCount = 1;
     func();                                                                    \
     uint64_t end = Timestamp::now().timestamp();                               \
     fprintf(stdout,                                                            \
-            "thread: %d, %d (%s) logs takes %ju us, average: %.2lf us\n", idx, \
-            kLogTestCount *n, type, end - start,                               \
+            "thread: %d, %d (%s) logs takes %" PRIu64                          \
+            " us, average: %.2lf us\n",                                        \
+            idx, kLogTestCount *n, type, end - start,                          \
             static_cast<double>(end - start) / kLogTestCount / n);             \
   } while (0)
 
@@ -148,7 +149,8 @@ void log_10_diff_element_len(const char *data, size_t n, const char *type,
               << d << "c@string" << str << data;
 
   uint64_t end = Timestamp::now().timestamp();
-  fprintf(stdout, "thread: %d, %d (%s) logs takes %ju us, average: %.2lf us\n",
+  fprintf(stdout,
+          "thread: %d, %d (%s) logs takes %" PRIu64 " us, average: %.2lf us\n",
           thread_idx, kLogTestCount, type, end - start,
           static_cast<double>(end - start) / kLogTestCount);
 }
@@ -170,7 +172,8 @@ void log_10_diff_element_len(const std::string &s, const char *type,
               << d << "c@string" << str << s;
 
   uint64_t end = Timestamp::now().timestamp();
-  fprintf(stdout, "thread: %d, %d (%s) logs takes %ju us, average: %.2lf us\n",
+  fprintf(stdout,
+          "thread: %d, %d (%s) logs takes %" PRIu64 " us, average: %.2lf us\n",
           thread_idx, kLogTestCount, type, end - start,
           static_cast<double>(end - start) / kLogTestCount);
 }

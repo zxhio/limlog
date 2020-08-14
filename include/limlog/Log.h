@@ -19,6 +19,7 @@
 #include <thread>
 #include <vector>
 
+#include <inttypes.h>
 #include <stdint.h> // uint32_t
 #include <stdio.h>
 #include <stdlib.h>
@@ -294,15 +295,15 @@ public:
   void listStatistic() const {
     printf("\n");
     printf("=== Logging System Related Data ===\n");
-    printf("  Total produced logs count: [%ju].\n", logCount_.load());
-    printf("  Total bytes of sinking to file: [%ju] bytes.\n",
+    printf("  Total produced logs count: [%" PRIu64 "].\n", logCount_.load());
+    printf("  Total bytes of sinking to file: [%" PRIu64 "] bytes.\n",
            totalConsumeBytes_);
-    printf("  Average bytes of sinking to file: [%ju] bytes.\n",
+    printf("  Average bytes of sinking to file: [%" PRIu64 "] bytes.\n",
            sinkCount_ == 0 ? 0 : totalConsumeBytes_ / sinkCount_);
     printf("  Count of sinking to file: [%u].\n", sinkCount_);
-    printf("  Total microseconds takes of sinking to file: [%ju] us.\n",
+    printf("  Total microseconds takes of sinking to file: [%" PRIu64 "] us.\n",
            totalSinkTimes_);
-    printf("  Average microseconds takes of sinking to file: [%ju] us.\n",
+    printf("  Average microseconds takes of sinking to file: [%" PRIu64 "] us.\n",
            sinkCount_ == 0 ? 0 : totalSinkTimes_ / sinkCount_);
     printf("\n");
   }
