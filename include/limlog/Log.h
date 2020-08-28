@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "LogFile.h"
 #include "NumToString.h"
 #include "Timestamp.h"
 
@@ -73,102 +74,6 @@ static const char *stringifyLogLevel(LogLevel level) {
     return "NONE ";
   }
 }
-
-/// Sink log info on file, and the file automatic roll with a setting size.
-/// If set log file, initially the log file format is `filename.date.log `.
-class LogSink {
-public:
-  LogSink() : LogSink(10) {}
-
-  LogSink(uint32_t rollSize)
-      : fileCount_(0),
-        rollSize_(rollSize),
-        writtenBytes_(0),
-        fileName_(kDefaultLogFile),
-        date_(util::Timestamp::now().date()),
-        fp_(nullptr) {}
-  ~LogSink() {
-    if (fp_)
-      fclose(fp_);
-  }
-
-  void setLogFile(const char *file) {
-    fileName_.assign(file);
-    rollFile();
-  }
-
-  void setRollSize(uint32_t size) { rollSize_ = size; }
-
-  /// Roll File with size. The new filename contain log file count.
-  void rollFile() {
-    if (fp_)
-      fclose(fp_);
-
-    std::string file(fileName_ + '.' + date_);
-    if (fileCount_)
-      file += '.' + std::to_string(fileCount_) + ".log";
-    else
-      file += ".log";
-
-    fp_ = fopen(file.c_str(), "a+");
-    if (!fp_) {
-      fprintf(stderr, "Faild to open file:%s\n", file.c_str());
-      exit(-1);
-    }
-
-    fileCount_++;
-  }
-
-  /// Sink log data \p data of length \p len to file.
-  size_t sink(const char *data, size_t len) {
-    if (fp_ == nullptr)
-      rollFile();
-
-    std::string today(util::Timestamp::now().date());
-    if (date_.compare(today)) {
-      date_.assign(today);
-      fileCount_ = 0;
-      rollFile();
-    }
-
-    uint64_t rollBytes = rollSize_ * kBytesPerMb;
-    if (writtenBytes_ % rollBytes + len > rollBytes)
-      rollFile();
-
-    return write(data, len);
-  }
-
-private:
-  uint32_t fileCount_;    // file roll count.
-  uint32_t rollSize_;     // size of MB.
-  uint64_t writtenBytes_; // total written bytes.
-  std::string fileName_;
-  std::string date_;
-  FILE *fp_;
-  static const uint32_t kBytesPerMb = 1 << 20;
-  static constexpr const char *kDefaultLogFile = "limlog";
-
-  size_t write(const char *data, size_t len) {
-    size_t n = fwrite(data, 1, len, fp_);
-    size_t remain = len - n;
-    while (remain > 0) {
-      size_t x = fwrite(data + n, 1, remain, fp_);
-      if (x == 0) {
-        int err = ferror(fp_);
-        if (err)
-          fprintf(stderr, "File write error: %s\n", strerror(err));
-        break;
-      }
-      n += x;
-      remain -= x;
-    }
-
-    fflush(fp_);
-    writtenBytes_ += len - remain;
-
-    return len - remain;
-  }
-};
 
 /// Circle FIFO blocking produce/consume byte queue. Hold log info to wait for
 /// background thread consume. It exists in each thread.
@@ -271,8 +176,9 @@ public:
   /// Log setting.
   LogLevel getLogLevel() const { return level_; };
   void setLogLevel(LogLevel level) { level_ = level; }
-  void setLogFile(const char *file) { logSink_.setLogFile(file); };
-  void setRollSize(uint32_t size) { logSink_.setRollSize(size); };
+  void setLogFile(const char *file) { logFile_.setFileName(file); };
+  void setMaxFileSize(size_t nMB) { logFile_.setMaxFileSize(nMB); };
+  void setMaxFileCount(size_t count) { logFile_.setMaxFileCount(count); }
 
   /// Singleton pointer.
   static LimLog *singleton() {
@@ -303,7 +209,8 @@ public:
     printf("  Count of sinking to file: [%u].\n", sinkCount_);
     printf("  Total microseconds takes of sinking to file: [%" PRIu64 "] us.\n",
            totalSinkTimes_);
-    printf("  Average microseconds takes of sinking to file: [%" PRIu64 "] us.\n",
+    printf("  Average microseconds takes of sinking to file: [%" PRIu64 "] us."
+           "\n",
            sinkCount_ == 0 ? 0 : totalSinkTimes_ / sinkCount_);
     printf("\n");
   }
@@ -313,7 +220,7 @@ private:
   LimLog &operator=(const LimLog &) = delete;
 
   LimLog()
-      : logSink_(),
+      : logFile_(kFileName, kMaxFileSize, kMaxFileCount),
         threadSync_(false),
         threadExit_(false),
         outputFull_(false),
@@ -412,7 +319,7 @@ private:
         proceedCond_.wait_for(lock, std::chrono::microseconds(50));
       } else {
         uint64_t beginTime = util::Timestamp::now().timestamp();
-        logSink_.sink(outputBuffer_, perConsumeBytes_);
+        logFile_.write(outputBuffer_, perConsumeBytes_);
         uint64_t endTime = util::Timestamp::now().timestamp();
 
         totalSinkTimes_ += endTime - beginTime;
@@ -435,7 +342,7 @@ private:
   }
 
 private:
-  LogSink logSink_;
+  LogFile logFile_;
   bool threadSync_; // front-back-end sync.
   bool threadExit_; // background thread exit flag.
   bool outputFull_; // output buffer full flag.
@@ -454,6 +361,10 @@ private:
   std::mutex condMutex_;
   std::condition_variable proceedCond_;  // for background thread to proceed.
   std::condition_variable hitEmptyCond_; // for no data to consume.
+
+  static const uint32_t kMaxFileSize = 64; // MB
+  static const uint32_t kMaxFileCount = 16;
+  static constexpr const char *kFileName = "log";
 };
 
 /// Log Location, include file, function, line.
@@ -485,8 +396,15 @@ inline void setLogFile(const char *file) {
   LimLog::singleton()->setLogFile(file);
 }
 
-/// Set log file roll size (MB), default 10 MB.
-inline void setRollSize(uint32_t nMb) { LimLog::singleton()->setRollSize(nMb); }
+/// Set max log file size (MB).
+inline void setMaxFileSize(size_t nMB) {
+  LimLog::singleton()->setMaxFileSize(nMB);
+}
+
+/// Set max log file count.
+inline void setMaxFileCount(size_t count) {
+  LimLog::singleton()->setMaxFileCount(count);
+}
 
 /// Back-end provides produce interface.
 inline void produceLog(const char *data, size_t n) {

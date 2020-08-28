@@ -217,9 +217,10 @@ void benchmark(int thread_idx) {
 
 int main() {
 
-  setLogFile("./test_log_file");
+  setLogFile("./test_log_file.log");
   setLogLevel(limlog::LogLevel::DEBUG);
-  setRollSize(64); // 64MB
+  setMaxFileSize(64); // 64MB
+  setMaxFileCount(16);
 
   std::vector<std::thread> threads;
   for (int i = 0; i < kTestThreadCount; ++i)
