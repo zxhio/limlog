@@ -45,8 +45,10 @@ public:
   }
 
   void close() {
-    if (fp_ != nullptr)
+    if (fp_ != nullptr) {
       fclose(fp_);
+      fp_ = nullptr;
+    }
   }
 
   void flush() { fflush(fp_); }
