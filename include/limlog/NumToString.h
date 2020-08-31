@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 namespace limlog {
-namespace util {
+namespace detail {
 
 // The digits table is used to look up for number within 100.
 // Each two character corresponds to one digit and ten digits.
@@ -85,5 +85,5 @@ static size_t i16toa(int16_t n, char *to) { return i2a(n, to); }
 static size_t i32toa(int32_t n, char *to) { return i2a(n, to); }
 static size_t i64toa(int64_t n, char *to) { return i2a(n, to); }
 
-} // namespace util
+} // namespace detail
 } // namespace limlog

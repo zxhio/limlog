@@ -318,9 +318,9 @@ private:
         hitEmptyCond_.notify_one();
         proceedCond_.wait_for(lock, std::chrono::microseconds(50));
       } else {
-        uint64_t beginTime = util::Timestamp::now().timestamp();
+        uint64_t beginTime = detail::Timestamp::now().timestamp();
         logFile_.write(outputBuffer_, perConsumeBytes_);
-        uint64_t endTime = util::Timestamp::now().timestamp();
+        uint64_t endTime = detail::Timestamp::now().timestamp();
 
         totalSinkTimes_ += endTime - beginTime;
         sinkCount_++;
@@ -425,8 +425,8 @@ inline void incConsumablePos(uint32_t n) {
 class LogLine {
 public:
   LogLine(LogLevel level, const LogLoc &loc) : count_(0), loc_(loc) {
-    *this << util::Timestamp::now().formatTimestamp() << ' ' << gettid() << ' '
-          << stringifyLogLevel(level) << "  ";
+    *this << detail::Timestamp::now().formatTimestamp() << ' ' << gettid()
+          << ' ' << stringifyLogLevel(level) << "  ";
   }
 
   ~LogLine() {
@@ -450,42 +450,42 @@ public:
 
   LogLine &operator<<(int16_t arg) {
     char tmp[8];
-    size_t len = util::i16toa(arg, tmp);
+    size_t len = detail::i16toa(arg, tmp);
     append(tmp, len);
     return *this;
   }
 
   LogLine &operator<<(uint16_t arg) {
     char tmp[8];
-    size_t len = util::u16toa(arg, tmp);
+    size_t len = detail::u16toa(arg, tmp);
     append(tmp, len);
     return *this;
   }
 
   LogLine &operator<<(int32_t arg) {
     char tmp[12];
-    size_t len = util::i32toa(arg, tmp);
+    size_t len = detail::i32toa(arg, tmp);
     append(tmp, len);
     return *this;
   }
 
   LogLine &operator<<(uint32_t arg) {
     char tmp[12];
-    size_t len = util::u32toa(arg, tmp);
+    size_t len = detail::u32toa(arg, tmp);
     append(tmp, len);
     return *this;
   }
 
   LogLine &operator<<(int64_t arg) {
     char tmp[24];
-    size_t len = util::i64toa(arg, tmp);
+    size_t len = detail::i64toa(arg, tmp);
     append(tmp, len);
     return *this;
   }
 
   LogLine &operator<<(uint64_t arg) {
     char tmp[24];
-    size_t len = util::u64toa(arg, tmp);
+    size_t len = detail::u64toa(arg, tmp);
     append(tmp, len);
     return *this;
   }

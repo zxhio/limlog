@@ -10,7 +10,7 @@
 #include <limlog/Log.h>
 
 using namespace limlog;
-using namespace limlog::util;
+using namespace limlog::detail;
 
 const int kLogTestCount = 100000;
 const int kTestThreadCount = 1;

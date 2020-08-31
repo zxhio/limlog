@@ -12,7 +12,7 @@
 
 #include <limlog/NumToString.h>
 
-using namespace limlog::util;
+using namespace limlog::detail;
 
 #define TEST_STRING_INTEGER_EQ(actual, expect, func)                           \
   do {                                                                         \

@@ -11,7 +11,7 @@
 
 #include <limlog/Timestamp.h>
 
-using namespace limlog::util;
+using namespace limlog::detail;
 
 void test_timestamp() {
 #if 1

@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 namespace limlog {
-namespace util {
+namespace detail {
 
 /// Wrapper of timestamp.
 class Timestamp {
@@ -93,5 +93,5 @@ private:
   static const uint32_t kUSecPerSec = 1000000;
 };
 
-} // namespace util
+} // namespace detail
 } // namespace limlog
