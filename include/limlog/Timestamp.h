@@ -60,8 +60,9 @@ public:
     time_t nowsec = timestamp_ / kUSecPerSec;
     if (t_second < nowsec) {
       t_second = nowsec;
-      struct tm *st_time = localtime(&t_second);
-      strftime(t_datetime, sizeof(t_datetime), "%Y%m%d %H:%M:%S", st_time);
+      struct tm st_time;
+      localtime_r(&t_second, &st_time);
+      strftime(t_datetime, sizeof(t_datetime), "%Y%m%d %H:%M:%S", &st_time);
     }
 
     return t_datetime;
