@@ -22,7 +22,7 @@ static int test_pass = 0;
     if (equality)                                                              \
       test_pass++;                                                             \
     else {                                                                     \
-      fprintf(stderr, "%s:%d: actual: " format " expect: " format "\n",        \
+      fprintf(stderr, "%s:%d: actual: '" format "' expect: '" format "'\n",        \
               __FILE__, __LINE__, actual, expect);                             \
     }                                                                          \
   } while (0)

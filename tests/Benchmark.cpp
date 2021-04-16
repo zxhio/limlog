@@ -12,14 +12,20 @@
 using namespace limlog;
 using namespace limlog::detail;
 
-const int kLogTestCount = 100000;
+const int kLogTestCount = 1000000;
 const int kTestThreadCount = 1;
+
+uint64_t sys_clock_now() {
+  return std::chrono::duration_cast<std::chrono::microseconds>(
+             std::chrono::system_clock().now().time_since_epoch())
+      .count();
+}
 
 #define LOG_TIME(func, type, n, idx)                                           \
   do {                                                                         \
-    uint64_t start = Timestamp::now().timestamp();                             \
+    uint64_t start = sys_clock_now();                                          \
     func();                                                                    \
-    uint64_t end = Timestamp::now().timestamp();                               \
+    uint64_t end = sys_clock_now();                                            \
     fprintf(stdout,                                                            \
             "thread: %d, %d (%s) logs takes %" PRIu64                          \
             " us, average: %.2lf us\n",                                        \
@@ -143,12 +149,12 @@ void log_10_diff_element_len(const char *data, size_t n, const char *type,
   uint64_t uint64 = UINT64_MAX;
   double d = 1.844674;
   std::string str("std::string");
-  uint64_t start = Timestamp::now().timestamp();
+  uint64_t start = sys_clock_now();
   for (int i = 0; i < kLogTestCount; ++i)
     LOG_DEBUG << ch << int16 << uint16 << int32 << uint32 << int64 << uint64
               << d << "c@string" << str << data;
 
-  uint64_t end = Timestamp::now().timestamp();
+  uint64_t end = sys_clock_now();
   fprintf(stdout,
           "thread: %d, %d (%s) logs takes %" PRIu64 " us, average: %.2lf us\n",
           thread_idx, kLogTestCount, type, end - start,
@@ -166,12 +172,12 @@ void log_10_diff_element_len(const std::string &s, const char *type,
   uint64_t uint64 = UINT64_MAX;
   double d = 1.844674;
   std::string str("std::string");
-  uint64_t start = Timestamp::now().timestamp();
+  uint64_t start = sys_clock_now();
   for (int i = 0; i < kLogTestCount; ++i)
     LOG_DEBUG << ch << int16 << uint16 << int32 << uint32 << int64 << uint64
               << d << "c@string" << str << s;
 
-  uint64_t end = Timestamp::now().timestamp();
+  uint64_t end = sys_clock_now();
   fprintf(stdout,
           "thread: %d, %d (%s) logs takes %" PRIu64 " us, average: %.2lf us\n",
           thread_idx, kLogTestCount, type, end - start,
@@ -217,10 +223,12 @@ void benchmark(int thread_idx) {
 
 int main() {
 
-  setLogFile("./test_log_file.log");
+  setLogFile("./logs/test_log_file.log");
   setLogLevel(limlog::LogLevel::DEBUG);
-  setMaxFileSize(64); // 64MB
-  setMaxFileCount(16);
+  setWriter(limlog::make_unique<limlog::NullWriter>());
+  // setWriter(limlog::make_unique<limlog::RotateWriter>("logs/test_log_file.log", 64, 5, 5));
+  setMaxSize(256); // 64MB
+  setMaxBackups(10);
 
   std::vector<std::thread> threads;
   for (int i = 0; i < kTestThreadCount; ++i)

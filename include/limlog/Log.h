@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "LogFile.h"
+#include "LogWriter.h"
 #include "NumToString.h"
 #include "Timestamp.h"
 
@@ -30,6 +30,9 @@
 #include <sys/syscall.h> // gettid().
 #include <unistd.h>
 typedef pid_t thread_id_t;
+#elif __APPLE__
+#include <pthread.h>
+typedef uint64_t thread_id_t;
 #else
 #include <sstream>
 typedef unsigned int thread_id_t; // MSVC
@@ -43,6 +46,8 @@ inline thread_id_t gettid() {
   if (t_tid == 0) {
 #ifdef __linux
     t_tid = syscall(__NR_gettid);
+#elif __APPLE__
+    pthread_threadid_np(NULL, &t_tid);
 #else
     std::stringstream ss;
     ss << std::this_thread::get_id();
@@ -169,6 +174,11 @@ private:
   char storage_[kBlockingBufferSize]; // buffer size power of 2.
 };
 
+template <class T, class... Args>
+std::unique_ptr<T> make_unique(Args &&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 /// Logging system.
 /// Manage the action and attibute of logging.
 class LimLog {
@@ -176,9 +186,10 @@ public:
   /// Log setting.
   LogLevel getLogLevel() const { return level_; };
   void setLogLevel(LogLevel level) { level_ = level; }
-  void setLogFile(const char *file) { logFile_.setFileName(file); };
-  void setMaxFileSize(size_t nMB) { logFile_.setMaxFileSize(nMB); };
-  void setMaxFileCount(size_t count) { logFile_.setMaxFileCount(count); }
+  void setLogFile(const char *file) { writer_->setFileName(file); };
+  void setMaxSize(size_t nMB) { writer_->setMaxSize(nMB); };
+  void setMaxBackups(size_t count) { writer_->setMaxBackups(count); }
+  void setWriter(std::unique_ptr<Writer> w) { writer_.swap(w); }
 
   /// Singleton pointer.
   static LimLog *singleton() {
@@ -220,7 +231,7 @@ private:
   LimLog &operator=(const LimLog &) = delete;
 
   LimLog()
-      : logFile_(kFileName, kMaxFileSize, kMaxFileCount),
+      : writer_(make_unique<StdoutWriter>()),
         threadSync_(false),
         threadExit_(false),
         outputFull_(false),
@@ -239,7 +250,6 @@ private:
         condMutex_(),
         proceedCond_(),
         hitEmptyCond_() {
-
     outputBuffer_ = static_cast<char *>(malloc(bufferSize_));
     doubleBuffer_ = static_cast<char *>(malloc(bufferSize_));
     // alloc memory exception handle.
@@ -319,7 +329,7 @@ private:
         proceedCond_.wait_for(lock, std::chrono::microseconds(50));
       } else {
         uint64_t beginTime = detail::Timestamp::now().timestamp();
-        logFile_.write(outputBuffer_, perConsumeBytes_);
+        writer_->write(outputBuffer_, perConsumeBytes_);
         uint64_t endTime = detail::Timestamp::now().timestamp();
 
         totalSinkTimes_ += endTime - beginTime;
@@ -342,7 +352,7 @@ private:
   }
 
 private:
-  LogFile logFile_;
+  std::unique_ptr<Writer> writer_;
   bool threadSync_; // front-back-end sync.
   bool threadExit_; // background thread exit flag.
   bool outputFull_; // output buffer full flag.
@@ -397,13 +407,15 @@ inline void setLogFile(const char *file) {
 }
 
 /// Set max log file size (MB).
-inline void setMaxFileSize(size_t nMB) {
-  LimLog::singleton()->setMaxFileSize(nMB);
-}
+inline void setMaxSize(size_t nMB) { LimLog::singleton()->setMaxSize(nMB); }
 
 /// Set max log file count.
-inline void setMaxFileCount(size_t count) {
-  LimLog::singleton()->setMaxFileCount(count);
+inline void setMaxBackups(size_t count) {
+  LimLog::singleton()->setMaxBackups(count);
+}
+
+inline void setWriter(std::unique_ptr<limlog::Writer> w) {
+  LimLog::singleton()->setWriter(std::move(w));
 }
 
 /// Back-end provides produce interface.
@@ -425,8 +437,8 @@ inline void incConsumablePos(uint32_t n) {
 class LogLine {
 public:
   LogLine(LogLevel level, const LogLoc &loc) : count_(0), loc_(loc) {
-    *this << detail::Timestamp::now().formatTimestamp() << ' ' << gettid()
-          << ' ' << stringifyLogLevel(level) << "  ";
+    *this << detail::Timestamp::now().format() << ' ' << gettid() << ' '
+          << stringifyLogLevel(level) << "  ";
   }
 
   ~LogLine() {

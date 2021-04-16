@@ -1,11 +1,12 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -march=native -O3 -Wall -Werror -I../include
+CXXFLAGS = -std=c++11 -march=native -O3 -Wall -Werror -I../include
 LDFLAGS = -lpthread
 
 SRCS = \
 	ItoaTest.cpp \
 	TimestampTest.cpp \
 	BlockingBufferTest.cpp \
+	LogWriterTest.cpp \
 	Benchmark.cpp
 
 OBJS = $(patsubst %.cpp, %.o, $(SRCS))
