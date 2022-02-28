@@ -9,7 +9,7 @@
 
 #include "Test.h"
 
-#include <limlog/Log.h>
+#include <limlog.h>
 
 #include <assert.h>
 #include <stdint.h>

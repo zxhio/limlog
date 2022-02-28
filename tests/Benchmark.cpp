@@ -7,10 +7,9 @@
 // Date:    2019/12/12 11:41:58
 //===----------------------------------------------------------------------===//
 
-#include <limlog/Log.h>
+#include <limlog.h>
 
-using namespace limlog;
-using namespace limlog::detail;
+#include <inttypes.h>
 
 const int kLogTestCount = 1000000;
 const int kTestThreadCount = 1;
@@ -222,13 +221,8 @@ void benchmark(int thread_idx) {
 }
 
 int main() {
-
-  setLogFile("./logs/test_log_file.log");
-  setLogLevel(limlog::LogLevel::DEBUG);
-  setWriter(limlog::make_unique<limlog::NullWriter>());
-  // setWriter(limlog::make_unique<limlog::RotateWriter>("logs/test_log_file.log", 64, 5, 5));
-  setMaxSize(256); // 64MB
-  setMaxBackups(10);
+  limlog::singleton()->setLogLevel(limlog::LogLevel::kDebug);
+  limlog::singleton()->setOutput(limlog::NullWriter::write);
 
   std::vector<std::thread> threads;
   for (int i = 0; i < kTestThreadCount; ++i)
