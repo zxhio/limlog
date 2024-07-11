@@ -77,7 +77,7 @@ static inline size_t formatUIntInternal(T v, char to[]) {
 
 template <typename T,
           typename std::enable_if<std::is_integral<T>::value, T>::type = 0>
-static inline size_t formatSIntInternal(T v, char to[]) {
+inline size_t formatSIntInternal(T v, char to[]) {
   char *p = to;
 
   while (v <= static_cast<T>(-100)) {
@@ -100,7 +100,7 @@ static inline size_t formatSIntInternal(T v, char to[]) {
 
 template <typename T,
           typename std::enable_if<std::is_integral<T>::value, T>::type = 0>
-static inline size_t formatInt(T v, char *to) {
+inline size_t formatInt(T v, char *to) {
   char buf[sizeof(v) * 4];
   size_t signLen = 0;
   size_t intLen = 0;
@@ -122,7 +122,7 @@ static inline size_t formatInt(T v, char *to) {
 
 template <typename T,
           typename std::enable_if<std::is_integral<T>::value, T>::type = 0>
-static inline size_t formatUIntWidth(T v, char *to, size_t fmtLen) {
+inline size_t formatUIntWidth(T v, char *to, size_t fmtLen) {
   char buf[sizeof(v) * 4];
   size_t len = formatUIntInternal(v, buf);
   char *p = buf + len;
@@ -137,7 +137,7 @@ static inline size_t formatUIntWidth(T v, char *to, size_t fmtLen) {
   return fmtLen;
 }
 
-static inline size_t formatChar(char *to, char c) {
+inline size_t formatChar(char *to, char c) {
   *to = c;
   return sizeof(char);
 }
@@ -343,7 +343,7 @@ inline thread_id_t gettid() {
 enum LogLevel : uint8_t { kTrace, kDebug, kInfo, kWarn, kError, kFatal };
 
 // Stringify log level with width of 5.
-static const char *stringifyLogLevel(LogLevel level) {
+inline const char *stringifyLogLevel(LogLevel level) {
   const char *levelName[] = {"TRAC", "DEBU", "INFO", "WARN", "ERRO", "FATA"};
   return levelName[level];
 }
@@ -538,7 +538,7 @@ private:
 };
 
 /// Singleton pointer.
-static LimLog<SyncLogger> *singleton() {
+inline LimLog<SyncLogger> *singleton() {
   static LimLog<SyncLogger> s_limlog;
   return &s_limlog;
 }
