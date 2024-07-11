@@ -57,14 +57,14 @@ void test_blocking_buffer() {
   char *mem_256kb =
       static_cast<char *>(malloc(sizeof(char) * kBytesPerKb * 256));
   char *mem_1mb = static_cast<char *>(malloc(sizeof(char) * kBytesPerMb));
+  char *mem_buf = static_cast<char *>(malloc(sizeof(BlockingBuffer)));
   memset(mem_128b, '1', 128);
   memset(mem_1kb, '2', kBytesPerKb);
   memset(mem_64kb, '3', kBytesPerKb * 64);
   memset(mem_256kb, '4', kBytesPerKb * 256);
   memset(mem_1mb, '5', kBytesPerMb);
 
-  BlockingBuffer *buf =
-      static_cast<BlockingBuffer *>(malloc(sizeof(BlockingBuffer)));
+  BlockingBuffer *buf = ::new (mem_buf) BlockingBuffer;
   uint32_t size = buf->size();
   uint32_t used = 0;
   assert(size == kBytesPerMb);
@@ -127,7 +127,7 @@ void test_blocking_buffer() {
   TEST_BUFFER_CONSUMABLE(buf, kBytesPerMb, size, kBytesPerMb, 0, kBytesPerMb);
   TEST_BUFFER_CONSUME(buf, mem_1mb, kBytesPerMb, size, 0, kBytesPerMb, 0);
 
-  free(buf);
+  free(mem_buf);
   free(mem_128b);
   free(mem_1kb);
   free(mem_64kb);
